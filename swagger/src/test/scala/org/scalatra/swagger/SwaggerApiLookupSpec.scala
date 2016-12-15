@@ -58,6 +58,7 @@ class ApiController1()(implicit val swagger: Swagger) extends ScalatraServlet wi
   override implicit protected def jsonFormats: Formats = DefaultFormats
 
   protected val applicationDescription: String = "The first API"
+  protected val applicationName = "firstApi"
 
   val listFoos = (apiOperation[List[String]]("listFoos")
     summary "Show all foos"
@@ -82,6 +83,7 @@ class ApiController2()(implicit val swagger: Swagger) extends ScalatraServlet wi
   override implicit protected def jsonFormats: Formats = DefaultFormats
 
   protected val applicationDescription: String = "The second API"
+  protected val applicationName = "secondApi"
 
   val listFoos = (apiOperation[List[String]]("listBars")
     summary "Show all bars"

@@ -300,8 +300,7 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
   this: ScalatraBase with SwaggerSupportBase =>
   protected implicit def swagger: SwaggerEngine[_]
 
-  @deprecated("This field is no longer used, due to changes in Swagger spec 1.2", "2.3.1")
-  protected def applicationName: Option[String] = None
+  protected def applicationName: String
 
   protected def applicationDescription: String
 
@@ -328,7 +327,7 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
     }
     val listingPath = resourcePath.drop(1) // drop the leading slash
 
-    swagger.register(listingPath, resourcePath, applicationDescription.blankOption, this, swaggerConsumes, swaggerProduces, swaggerProtocols, swaggerAuthorizations)
+    swagger.register(listingPath, resourcePath, applicationDescription.blankOption, applicationName.blankOption, this, swaggerConsumes, swaggerProduces, swaggerProtocols, swaggerAuthorizations)
   }
 
   /**

@@ -19,13 +19,14 @@ class SwaggerWithAuth(val swaggerVersion: String, val apiVersion: String, val ap
   /**
    * Registers the documentation for an API with the given path.
    */
-  def register(listingPath: String, resourcePath: String, description: Option[String], s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String]) {
+  def register(listingPath: String, resourcePath: String, description: Option[String], name: Option[String] = None, s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String]) {
     val endpoints: List[AuthEndpoint[AnyRef]] = s.endpoints(resourcePath) collect { case m: AuthEndpoint[AnyRef] => m }
     _docs += listingPath -> AuthApi(
       apiVersion,
       swaggerVersion,
       resourcePath,
       description,
+      name,
       (produces ::: endpoints.flatMap(_.operations.flatMap(_.produces))).distinct,
       (consumes ::: endpoints.flatMap(_.operations.flatMap(_.consumes))).distinct,
       (protocols ::: endpoints.flatMap(_.operations.flatMap(_.protocols))).distinct,
@@ -102,6 +103,7 @@ object SwaggerAuthSerializers {
         (json \ "swaggerVersion").extractOrElse(""),
         (json \ "resourcePath").extractOrElse(""),
         (json \ "description").extractOpt[String].flatMap(_.blankOption),
+        (json \ "name").extractOpt[String].flatMap(_.blankOption),
         (json \ "produces").extractOrElse(List.empty[String]),
         (json \ "consumes").extractOrElse(List.empty[String]),
         (json \ "protocols").extractOrElse(List.empty[String]),
@@ -193,6 +195,7 @@ case class AuthApi[TypeForUser <: AnyRef](
   swaggerVersion: String,
   resourcePath: String,
   description: Option[String] = None,
+  name: Option[String] = None,
   produces: List[String] = Nil,
   consumes: List[String] = Nil,
   protocols: List[String] = Nil,

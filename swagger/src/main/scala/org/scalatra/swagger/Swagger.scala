@@ -41,7 +41,7 @@ trait SwaggerEngine[T <: SwaggerApi[_]] {
   /**
    * Registers the documentation for an API with the given path.
    */
-  def register(listingPath: String, resourcePath: String, description: Option[String], s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String])
+  def register(listingPath: String, resourcePath: String, description: Option[String], name: Option[String], s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String])
 
 }
 
@@ -183,7 +183,7 @@ class Swagger(val swaggerVersion: String, val apiVersion: String, val apiInfo: A
   /**
    * Registers the documentation for an API with the given path.
    */
-  def register(listingPath: String, resourcePath: String, description: Option[String], s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String]) = {
+  def register(listingPath: String, resourcePath: String, description: Option[String], name: Option[String] = None, s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String]) = {
     logger.debug(s"registering swagger api with: { listingPath: $listingPath, resourcePath: $resourcePath, description: $resourcePath, servlet: ${s.getClass} }")
     val endpoints: List[Endpoint] = s.endpoints(resourcePath) collect { case m: Endpoint => m }
     _docs += listingPath -> Api(
@@ -191,6 +191,7 @@ class Swagger(val swaggerVersion: String, val apiVersion: String, val apiInfo: A
       swaggerVersion,
       resourcePath,
       description,
+      name,
       (produces ::: endpoints.flatMap(_.operations.flatMap(_.produces))).distinct,
       (consumes ::: endpoints.flatMap(_.operations.flatMap(_.consumes))).distinct,
       (protocols ::: endpoints.flatMap(_.operations.flatMap(_.protocols))).distinct,
@@ -207,6 +208,7 @@ trait SwaggerApi[T <: SwaggerEndpoint[_]] {
   def swaggerVersion: String
   def resourcePath: String
   def description: Option[String]
+  def name: Option[String]
   def produces: List[String]
   def consumes: List[String]
   def protocols: List[String]
@@ -266,7 +268,7 @@ object ParamType extends Enumeration {
 
   val File = Value("file")
 
-  val Form = Value("form")
+  val Form = Value("formData")
 }
 
 sealed trait DataType {

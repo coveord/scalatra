@@ -13,10 +13,27 @@
       "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
     }
   },
+  "tags": [
+    {
+      "name": "StoreApi",
+      "description": "Operations about store"
+    },
+    {
+      "name": "UserApi",
+      "description": "Operations about user"
+    },
+    {
+      "name": "PetsApi",
+      "description": "Operations about pets"
+    }
+  ],
   "paths": {
     "/store/order": {
       "post": {
         "operationId": "placeOrder",
+        "tags": [
+          "StoreApi"
+        ],
         "summary": "Place an order for a pet",
         "parameters": [
           {
@@ -42,6 +59,9 @@
     "/pet/findByTags": {
       "get": {
         "operationId": "findPetsByTags",
+        "tags": [
+          "PetsApi"
+        ],
         "summary": "Finds Pets by tags",
         "produces": [
           "application/json",
@@ -77,6 +97,9 @@
     "/store/order/{orderId}": {
       "delete": {
         "operationId": "deleteOrder",
+        "tags": [
+          "StoreApi"
+        ],
         "summary": "Delete purchase order by ID",
         "parameters": [],
         "responses": {
@@ -93,6 +116,9 @@
       },
       "get": {
         "operationId": "getOrderById",
+        "tags": [
+          "StoreApi"
+        ],
         "summary": "Find purchase order by ID",
         "produces": [
           "application/json",
@@ -125,6 +151,9 @@
     "/user/": {
       "post": {
         "operationId": "createUser",
+        "tags": [
+          "UserApi"
+        ],
         "summary": "",
         "parameters": [],
         "responses": {
@@ -139,6 +168,9 @@
     "/pet/{petId}": {
       "delete": {
         "operationId": "deletePet",
+        "tags": [
+          "PetsApi"
+        ],
         "summary": "Deletes a pet",
         "parameters": [
           {
@@ -160,6 +192,9 @@
       },
       "get": {
         "operationId": "getPetById",
+        "tags": [
+          "PetsApi"
+        ],
         "summary": "Find pet by ID",
         "produces": [
           "application/json",
@@ -200,6 +235,9 @@
     "/pet/findByStatus": {
       "get": {
         "operationId": "findPetsByStatus",
+        "tags": [
+          "PetsApi"
+        ],
         "summary": "Finds Pets by status",
         "produces": [
           "application/json",
@@ -210,6 +248,12 @@
             "name": "status",
             "description": "Status values that need to be considered for filter",
             "required": true,
+            "enum": [
+              "available",
+              "pending",
+              "sold"
+            ],
+            "defaultValue": "available",
             "in": "query",
             "type": "array",
             "items": {
@@ -235,6 +279,9 @@
     "/pet/": {
       "post": {
         "operationId": "addPet",
+        "tags": [
+          "PetsApi"
+        ],
         "summary": "Add a new pet to the store",
         "parameters": [
           {
@@ -258,6 +305,9 @@
       },
       "put": {
         "operationId": "updatePet",
+        "tags": [
+          "PetsApi"
+        ],
         "summary": "Update an existing pet",
         "parameters": [
           {
