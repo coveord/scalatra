@@ -378,6 +378,7 @@ object SwaggerSerializers {
         (json \ "swaggerVersion").extractOrElse(""),
         (json \ "resourcePath").extractOrElse(""),
         (json \ "description").extractOpt[String].flatMap(_.blankOption),
+        (json \ "name").extractOpt[String].flatMap(_.blankOption),
         (json \ "produces").extractOrElse(List.empty[String]),
         (json \ "consumes").extractOrElse(List.empty[String]),
         (json \ "protocols").extractOrElse(List.empty[String]),

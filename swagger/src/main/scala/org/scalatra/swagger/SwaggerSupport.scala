@@ -15,13 +15,13 @@ import scala.util.parsing.combinator.RegexParsers
 
 trait SwaggerSupportBase {
   /**
-   * Builds the documentation for all the endpoints discovered in an API.
-   */
+    * Builds the documentation for all the endpoints discovered in an API.
+    */
   def endpoints(basePath: String): List[SwaggerEndpoint[_ <: SwaggerOperation]]
 
   /**
-   * Extract an operation from a route
-   */
+    * Extract an operation from a route
+    */
   protected def extractOperation(route: Route, method: HttpMethod): SwaggerOperation
 }
 object SwaggerSupportSyntax {
@@ -300,8 +300,7 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
   this: ScalatraBase with SwaggerSupportBase =>
   protected implicit def swagger: SwaggerEngine[_]
 
-  @deprecated("This field is no longer used, due to changes in Swagger spec 1.2", "2.3.1")
-  protected def applicationName: Option[String] = None
+  protected def applicationName: String
 
   protected def applicationDescription: String
 
@@ -328,16 +327,16 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
     }
     val listingPath = resourcePath.drop(1) // drop the leading slash
 
-    swagger.register(listingPath, resourcePath, applicationDescription.blankOption, this, swaggerConsumes, swaggerProduces, swaggerProtocols, swaggerAuthorizations)
+    swagger.register(listingPath, resourcePath, applicationDescription.blankOption, applicationName.blankOption, this, swaggerConsumes, swaggerProduces, swaggerProtocols, swaggerAuthorizations)
   }
 
   /**
-   * Initializes the kernel.  Used to provide context that is unavailable
-   * when the instance is constructed, for example the servlet lifecycle.
-   * Should set the `config` variable to the parameter.
-   *
-   * @param config the configuration.
-   */
+    * Initializes the kernel.  Used to provide context that is unavailable
+    * when the instance is constructed, for example the servlet lifecycle.
+    * Should set the `config` variable to the parameter.
+    *
+    * @param config the configuration.
+    */
   abstract override def initialize(config: ConfigT) {
     super.initialize(config)
     try {
@@ -373,20 +372,20 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
   private[swagger] val _models: mutable.Map[String, Model] = mutable.Map.empty
 
   /**
-   * Registers a model for swagger
-   *
-   * @param model the model to add to the swagger definition
-   */
+    * Registers a model for swagger
+    *
+    * @param model the model to add to the swagger definition
+    */
   protected def registerModel(model: Model) {
     _models.getOrElseUpdate(model.id, model)
   }
 
   /**
-   * Registers a model for swagger, this method reflects over the class and collects all
-   * non-primitive classes and adds those to the swagger defintion
-   *
-   * @tparam T the class of the model to register
-   */
+    * Registers a model for swagger, this method reflects over the class and collects all
+    * non-primitive classes and adds those to the swagger defintion
+    *
+    * @tparam T the class of the model to register
+    */
   protected def registerModel[T: Manifest : NotNothing]() {
     Swagger.collectModels[T](_models.values.toSet) map registerModel
   }
@@ -395,10 +394,10 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
   protected def models_=(m: Map[String, Model]) = _models ++= m
 
   /**
-   * The currently registered model descriptions for swagger
-   *
-   * @return a map of swagger models
-   */
+    * The currently registered model descriptions for swagger
+    *
+    * @return a map of swagger models
+    */
   def models = _models
 
   private[swagger] var _description: PartialFunction[String, String] = Map.empty
@@ -524,8 +523,8 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
 }
 
 /**
- * Provides the necessary support for adding documentation to your routes.
- */
+  * Provides the necessary support for adding documentation to your routes.
+  */
 trait SwaggerSupport extends ScalatraBase with SwaggerSupportBase with SwaggerSupportSyntax {
 
   import org.scalatra.swagger.SwaggerSupportSyntax._
@@ -543,8 +542,8 @@ trait SwaggerSupport extends ScalatraBase with SwaggerSupportBase with SwaggerSu
   }
 
   /**
-   * Builds the documentation for all the endpoints discovered in an API.
-   */
+    * Builds the documentation for all the endpoints discovered in an API.
+    */
   def endpoints(basePath: String): List[Endpoint] = {
     (swaggerEndpointEntries(extractOperation) groupBy (_.key)).toList map {
       case (name, entries) ⇒
@@ -557,9 +556,9 @@ trait SwaggerSupport extends ScalatraBase with SwaggerSupportBase with SwaggerSu
   }
 
   /**
-   * Returns a list of operations based on the given route. The default implementation returns a list with only 1
-   * operation.
-   */
+    * Returns a list of operations based on the given route. The default implementation returns a list with only 1
+    * operation.
+    */
   protected def extractOperation(route: Route, method: HttpMethod): Operation = {
     val op = route.metadata.get(Symbols.Operation) map (_.asInstanceOf[Operation])
     op map (_.copy(method = method)) getOrElse {

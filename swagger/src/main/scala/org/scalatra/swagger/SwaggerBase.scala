@@ -4,11 +4,12 @@ package swagger
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatra.json.JsonSupport
+import org.scalatra.swagger.AllowableValues.{AllowableRangeValues, AllowableValuesList}
 import org.scalatra.swagger.DataType.{ContainerDataType, ValueDataType}
 
 /**
- * Trait that serves the resource and operation listings, as specified by the Swagger specification.
- */
+  * Trait that serves the resource and operation listings, as specified by the Swagger specification.
+  */
 trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSupport[_] with CorsSupport =>
 
   protected type ApiType <: SwaggerApi[_]
@@ -29,17 +30,17 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
   }
 
   /**
-   * The name of the route to use when getting the index listing for swagger
-   * defaults to optional resources.:format or /
-   * @return The name of the route
-   */
+    * The name of the route to use when getting the index listing for swagger
+    * defaults to optional resources.:format or /
+    * @return The name of the route
+    */
   protected def indexRoute: String = "resources"
 
   /**
-   * Whether to include the format parameter in the index listing for swagger
-   * defaults to false, the format parameter will not be present but is still optional.
-   * @return true if the format parameter should be included in the returned json
-   */
+    * Whether to include the format parameter in the index listing for swagger
+    * defaults to false, the format parameter will not be present but is still optional.
+    * @return true if the format parameter should be included in the returned json
+    */
   protected def includeFormatParameter: Boolean = false
 
   abstract override def initialize(config: ConfigT) {
@@ -67,8 +68,8 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
   }
 
   /**
-   * Returns the Swagger instance responsible for generating the resource and operation listings.
-   */
+    * Returns the Swagger instance responsible for generating the resource and operation listings.
+    */
   protected implicit def swagger: SwaggerEngine[_ <: SwaggerApi[_]]
 
   protected def renderDoc(doc: ApiType): JValue = {
@@ -128,12 +129,20 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
         ("license" -> (
           ("name" -> swagger.apiInfo.license) ~
             ("url" -> swagger.apiInfo.licenseUrl)))) ~
+      ("tags" ->
+        (docs.filter(_.apis.nonEmpty).collect {
+          case doc => {
+            ("name" -> doc.name.getOrElse("")) ~
+            ("description" -> doc.description.getOrElse(""))
+          }
+        })) ~
       ("paths" ->
         (docs.filter(_.apis.nonEmpty).flatMap {
           doc => doc.apis.collect { case api: Endpoint =>
             (api.path -> api.operations.map { operation =>
               (operation.method.toString.toLowerCase -> (
                 ("operationId" -> operation.nickname) ~
+                ("tags" -> List(doc.name.getOrElse(""))) ~!
                 ("summary" -> operation.summary) ~!
                 ("schemes" -> operation.protocols) ~!
                 ("consumes" -> operation.consumes) ~!
@@ -141,8 +150,17 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                 ("parameters" -> operation.parameters.map { parameter =>
                   ("name" -> parameter.name) ~
                     ("description" -> parameter.description) ~
-                    ("required" -> parameter.required) ~
-                    ("in" -> parameter.paramType.toString.toLowerCase) ~~
+                    ("required" -> parameter.required) ~~
+                    (parameter.allowableValues match {
+                      case list: AllowableValuesList[_] => JField("enum", list.values.map(_.toString))
+                      // case range: AllowableRangeValues => ??? Not sure here...
+                      case _ => JField("", JNothing)
+                    }) ~
+                    (parameter.defaultValue match {
+                      case s: Some[String] => JField("defaultValue", s)
+                      case _ => JField("", JNothing)
+                    }) ~
+                    ("in" -> parameter.paramType.toString) ~~
                     (if (parameter.paramType.toString.toLowerCase == "body") {
                       List(JField("schema", JObject(JField("$ref", s"#/definitions/${parameter.`type`.name}"))))
                     } else {

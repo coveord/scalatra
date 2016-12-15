@@ -28,20 +28,20 @@ trait SwaggerEngine[T <: SwaggerApi[_]] {
   def docs = _docs.values
 
   /**
-   * Configurations used by UrlGenerator when creating baseUrl.
-   */
+    * Configurations used by UrlGenerator when creating baseUrl.
+    */
   def baseUrlIncludeContextPath = true
   def baseUrlIncludeServletPath = false
 
   /**
-   * Returns the documentation for the given path.
-   */
+    * Returns the documentation for the given path.
+    */
   def doc(path: String): Option[T] = _docs.get(path)
 
   /**
-   * Registers the documentation for an API with the given path.
-   */
-  def register(listingPath: String, resourcePath: String, description: Option[String], s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String])
+    * Registers the documentation for an API with the given path.
+    */
+  def register(listingPath: String, resourcePath: String, description: Option[String], name: Option[String], s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String])
 
 }
 
@@ -175,15 +175,15 @@ object Swagger {
 }
 
 /**
- * An instance of this class is used to hold the API documentation.
- */
+  * An instance of this class is used to hold the API documentation.
+  */
 class Swagger(val swaggerVersion: String, val apiVersion: String, val apiInfo: ApiInfo) extends SwaggerEngine[Api] {
   private[this] val logger = Logger[this.type]
 
   /**
-   * Registers the documentation for an API with the given path.
-   */
-  def register(listingPath: String, resourcePath: String, description: Option[String], s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String]) = {
+    * Registers the documentation for an API with the given path.
+    */
+  def register(listingPath: String, resourcePath: String, description: Option[String], name: Option[String] = None, s: SwaggerSupportSyntax with SwaggerSupportBase, consumes: List[String], produces: List[String], protocols: List[String], authorizations: List[String]) = {
     logger.debug(s"registering swagger api with: { listingPath: $listingPath, resourcePath: $resourcePath, description: $resourcePath, servlet: ${s.getClass} }")
     val endpoints: List[Endpoint] = s.endpoints(resourcePath) collect { case m: Endpoint => m }
     _docs += listingPath -> Api(
@@ -191,6 +191,7 @@ class Swagger(val swaggerVersion: String, val apiVersion: String, val apiInfo: A
       swaggerVersion,
       resourcePath,
       description,
+      name,
       (produces ::: endpoints.flatMap(_.operations.flatMap(_.produces))).distinct,
       (consumes ::: endpoints.flatMap(_.operations.flatMap(_.consumes))).distinct,
       (protocols ::: endpoints.flatMap(_.operations.flatMap(_.protocols))).distinct,
@@ -207,6 +208,7 @@ trait SwaggerApi[T <: SwaggerEndpoint[_]] {
   def swaggerVersion: String
   def resourcePath: String
   def description: Option[String]
+  def name: Option[String]
   def produces: List[String]
   def consumes: List[String]
   def protocols: List[String]
@@ -228,16 +230,18 @@ case class ResourceListing(
 case class ApiListingReference(path: String, description: Option[String] = None, position: Int = 0)
 
 case class Api(apiVersion: String,
-    swaggerVersion: String,
-    resourcePath: String,
-    description: Option[String] = None,
-    produces: List[String] = Nil,
-    consumes: List[String] = Nil,
-    protocols: List[String] = Nil,
-    apis: List[Endpoint] = Nil,
-    models: Map[String, Model] = Map.empty,
-    authorizations: List[String] = Nil,
-    position: Int = 0) extends SwaggerApi[Endpoint] {
+  swaggerVersion: String,
+  resourcePath: String,
+  description: Option[String] = None,
+  name: Option[String] = None,
+  produces: List[String] = Nil,
+  consumes: List[String] = Nil,
+  protocols: List[String] = Nil,
+  apis: List[Endpoint] = Nil,
+  models: Map[String, Model] = Map.empty,
+  authorizations: List[String] = Nil,
+  position: Int = 0) extends SwaggerApi[Endpoint] {
+
 }
 
 object ParamType extends Enumeration {
@@ -247,18 +251,18 @@ object ParamType extends Enumeration {
   val Body = Value("body")
 
   /**
-   * A parameter carried on the query string.
-   *
-   * E.g. http://example.com/foo?param=2
-   */
+    * A parameter carried on the query string.
+    *
+    * E.g. http://example.com/foo?param=2
+    */
   val Query = Value("query")
 
   /**
-   * A path parameter mapped to a Scalatra route.
-   *
-   * E.g. http://example.com/foo/2 where there's a route like
-   * get("/foo/:id").
-   */
+    * A path parameter mapped to a Scalatra route.
+    *
+    * E.g. http://example.com/foo/2 where there's a route like
+    * get("/foo/:id").
+    */
   val Path = Value("path")
 
   /** A parameter carried in an HTTP header. **/
@@ -266,7 +270,7 @@ object ParamType extends Enumeration {
 
   val File = Value("file")
 
-  val Form = Value("form")
+  val Form = Value("formData")
 }
 
 sealed trait DataType {
@@ -422,12 +426,12 @@ case class ModelProperty(`type`: DataType,
   items: Option[ModelRef] = None)
 
 case class Model(id: String,
-    name: String,
-    qualifiedName: Option[String] = None,
-    description: Option[String] = None,
-    properties: List[(String, ModelProperty)] = Nil,
-    baseModel: Option[String] = None,
-    discriminator: Option[String] = None) {
+  name: String,
+  qualifiedName: Option[String] = None,
+  description: Option[String] = None,
+  properties: List[(String, ModelProperty)] = Nil,
+  baseModel: Option[String] = None,
+  discriminator: Option[String] = None) {
 
   def setRequired(property: String, required: Boolean): Model = {
     val prop = properties.find(_._1 == property).get
@@ -448,8 +452,8 @@ trait AuthorizationType {
   def `type`: String
 }
 case class OAuth(
-    scopes: List[String],
-    grantTypes: List[GrantType]) extends AuthorizationType {
+  scopes: List[String],
+  grantTypes: List[GrantType]) extends AuthorizationType {
   override val `type` = "oauth2"
 }
 case class ApiKey(keyname: String, passAs: String = "header") extends AuthorizationType {
@@ -460,13 +464,13 @@ trait GrantType {
   def `type`: String
 }
 case class ImplicitGrant(
-    loginEndpoint: LoginEndpoint,
-    tokenName: String) extends GrantType {
+  loginEndpoint: LoginEndpoint,
+  tokenName: String) extends GrantType {
   def `type` = "implicit"
 }
 case class AuthorizationCodeGrant(
-    tokenRequestEndpoint: TokenRequestEndpoint,
-    tokenEndpoint: TokenEndpoint) extends GrantType {
+  tokenRequestEndpoint: TokenRequestEndpoint,
+  tokenEndpoint: TokenEndpoint) extends GrantType {
   def `type` = "authorization_code"
 }
 trait SwaggerOperation {

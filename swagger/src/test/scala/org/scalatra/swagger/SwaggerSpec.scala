@@ -17,8 +17,8 @@ import scala.collection.mutable
 import scala.io.Source
 
 /**
- * TestCase for Swagger 1.x support
- */
+  * TestCase for Swagger 1.x support
+  */
 class SwaggerSpec extends ScalatraSpec with JsonMatchers {
   def is = sequential ^
     "Swagger integration should" ^
@@ -56,8 +56,8 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
   implicit val formats = DefaultFormats
 
   /**
-   * Sets the port to listen on.  0 means listen on any available port.
-   */
+    * Sets the port to listen on.  0 means listen on any available port.
+    */
   override lazy val port: Int = { val s = new ServerSocket(0); try { s.getLocalPort } finally { s.close() } } //58468
 
   val listResourceJValue = readJson("api-docs.json") // merge (("basePath" -> ("http://localhost:" + port)):JValue)
@@ -278,8 +278,8 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
 }
 
 /**
- * TestCase for Swagger 2.0 support
- */
+  * TestCase for Swagger 2.0 support
+  */
 class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
   def is = sequential ^
     "Swagger 2.0 integration should" ^
@@ -313,8 +313,8 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
   implicit val formats = DefaultFormats
 
   /**
-   * Sets the port to listen on.  0 means listen on any available port.
-   */
+    * Sets the port to listen on.  0 means listen on any available port.
+    */
   override lazy val port: Int = { val s = new ServerSocket(0); try { s.getLocalPort } finally { s.close() } } //58468
 
   val swaggerJsonJValue = readJson("swagger.json")
@@ -407,7 +407,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
   }
 
   def verifyOperation(actual: JValue, expected: JValue, operationId: String) = {
-    val m = verifyFields(actual, expected, "operationId", "summary", "schemes", "consumes", "produces", "parameters", "responses", "security")
+    val m = verifyFields(actual, expected, "operationId", "summary", "schemes", "consumes", "produces", "parameters", "responses", "security", "defaultValue")
     m setMessage (m.message + " of the operation " + operationId)
   }
 
@@ -460,7 +460,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
 class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
 
   protected val applicationDescription = "Operations about pets"
-  override protected val applicationName = Some("pet")
+  protected val applicationName = "PetsApi"
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
 
@@ -558,7 +558,7 @@ class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet
 
 class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
   protected val applicationDescription = "Operations about store"
-  override protected val applicationName = Some("store")
+  protected val applicationName = "StoreApi"
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
   protected override val swaggerProduces: List[String] = "application/json" :: "application/xml" :: Nil
@@ -605,7 +605,7 @@ class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupp
 
 class UserApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
   protected val applicationDescription = "Operations about user"
-  override protected val applicationName = Some("user")
+  protected val applicationName = "UserApi"
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
 
