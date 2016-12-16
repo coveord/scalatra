@@ -161,7 +161,6 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                     ("required" -> parameter.required) ~~
                     (parameter.allowableValues match {
                       case list: AllowableValuesList[_] => JField("enum", list.values.map(_.toString))
-                      // case range: AllowableRangeValues => ??? Not sure here...
                       case _ => JField("", JNothing)
                     }) ~
                     (parameter.defaultValue match {
