@@ -460,7 +460,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
 class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
 
   protected val applicationDescription = "Operations about pets"
-  protected val applicationName = "PetsApi"
+  override protected val applicationName = "PetsApi"
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
 
@@ -558,7 +558,7 @@ class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet
 
 class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
   protected val applicationDescription = "Operations about store"
-  protected val applicationName = "StoreApi"
+  override protected val applicationName = "StoreApi"
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
   protected override val swaggerProduces: List[String] = "application/json" :: "application/xml" :: Nil
@@ -605,7 +605,7 @@ class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupp
 
 class UserApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
   protected val applicationDescription = "Operations about user"
-  protected val applicationName = "UserApi"
+  override protected val applicationName = "UserApi"
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
 

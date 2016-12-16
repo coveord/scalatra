@@ -270,7 +270,7 @@ object ParamType extends Enumeration {
 
   val File = Value("file")
 
-  val Form = Value("formData")
+  val Form = Value("form")
 }
 
 sealed trait DataType {

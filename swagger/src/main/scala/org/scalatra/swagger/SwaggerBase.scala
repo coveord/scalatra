@@ -117,6 +117,14 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
     }
   }
 
+  private[this] def toSwagger2ParamType(paramType: String): String = {
+    if (paramType.toLowerCase == "form") {
+      "formData"
+    } else {
+      paramType
+    }
+  }
+
   protected def renderSwagger2(docs: List[ApiType]): JValue = {
     ("swagger" -> "2.0") ~
       ("info" ->
@@ -160,7 +168,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                       case s: Some[String] => JField("defaultValue", s)
                       case _ => JField("", JNothing)
                     }) ~
-                    ("in" -> parameter.paramType.toString) ~~
+                    ("in" -> toSwagger2ParamType(parameter.paramType.toString)) ~~
                     (if (parameter.paramType.toString.toLowerCase == "body") {
                       List(JField("schema", JObject(JField("$ref", s"#/definitions/${parameter.`type`.name}"))))
                     } else {

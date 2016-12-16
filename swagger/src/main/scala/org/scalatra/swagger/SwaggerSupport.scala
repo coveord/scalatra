@@ -300,7 +300,7 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
   this: ScalatraBase with SwaggerSupportBase =>
   protected implicit def swagger: SwaggerEngine[_]
 
-  protected def applicationName: String
+  protected def applicationName: String = "default"
 
   protected def applicationDescription: String
 
