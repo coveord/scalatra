@@ -11,7 +11,7 @@ import org.json4s.native.JsonParser
 import org.scalatra.json.NativeJsonSupport
 import org.scalatra.swagger.annotations._
 import org.scalatra.test.specs2.ScalatraSpec
-import org.specs2.matcher.{ JsonMatchers, MatchResult }
+import org.specs2.matcher.{JsonMatchers, MatchResult}
 
 import scala.collection.mutable
 import scala.io.Source
@@ -28,6 +28,7 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
     "list user operations" ! listUserOperations ^
     "list model elements in order" ! checkModelOrder ^
     end
+
   val apiInfo = ApiInfo(
     title = "Swagger Sample App",
     description = "This is a sample server Petstore server.  You can find out more about Swagger \n    at <a href=\"http://swagger.wordnik.com\">http://swagger.wordnik.com</a> or on irc.freenode.net, #swagger.",
@@ -58,7 +59,13 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
   /**
    * Sets the port to listen on.  0 means listen on any available port.
    */
-  override lazy val port: Int = { val s = new ServerSocket(0); try { s.getLocalPort } finally { s.close() } } //58468
+  override lazy val port: Int = {
+    val s = new ServerSocket(0); try {
+      s.getLocalPort
+    } finally {
+      s.close()
+    }
+  } //58468
 
   val listResourceJValue = readJson("api-docs.json") // merge (("basePath" -> ("http://localhost:" + port)):JValue)
 
@@ -93,6 +100,7 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
     }
 
   val propOrder = "category" :: "name" :: "id" :: "tags" :: "status" :: "photoUrls" :: Nil
+
   def checkModelOrder = {
     get("/api-docs/pet") {
       val bd = JsonParser.parseOpt(body)
@@ -142,6 +150,7 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
 
   val petOperations = "updatePet" :: "addPet" :: "deletePet" :: "findPetsByTags" :: "findPetsByStatus" :: "getPetById" :: Nil
   val storeOperations = "placeOrder" :: "deleteOrder" :: "getOrderById" :: Nil
+
   //  val operations = "allPets" :: Nil
   def listPetOperations = {
     get("/api-docs/pet") {
@@ -183,10 +192,10 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
       (actual \ "consumes" must_== expected \ "consumes") and
       (actual \ "produces" must_== expected \ "produces") and
       (actual \ "resourcePath" must_== expected \ "resourcePath") and {
-        val ja = actual \ "apis" \ "path" \\ classOf[JString]
-        (ja must haveSize(operationPaths.size)) and
-          (ja must containTheSameElementsAs(operationPaths))
-      }
+      val ja = actual \ "apis" \ "path" \\ classOf[JString]
+      (ja must haveSize(operationPaths.size)) and
+        (ja must containTheSameElementsAs(operationPaths))
+    }
   }
 
   def verifyOperation(actual: JValue, expected: JValue, name: String) = {
@@ -244,7 +253,9 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
             mm setMessage (mm.message + " in response messages collection")
           }
           def countsmatch = (af.size must_== ef.size).setMessage("The count for the responseMessages is different")
-          if (r.nonEmpty) { countsmatch and (r reduce (_ and _)) } else countsmatch
+          if (r.nonEmpty) {
+            countsmatch and (r reduce (_ and _))
+          } else countsmatch
         case "parameters" =>
           val JArray(af) = act \ fn
           val JArray(ef) = exp \ fn
@@ -285,6 +296,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
     "Swagger 2.0 integration should" ^
     "generate api definitions" ! generateApiDefinitions ^
     end
+
   val apiInfo = ApiInfo(
     title = "Swagger Sample App",
     description = "This is a sample server Petstore server.  You can find out more about Swagger \n    at <a href=\"http://swagger.wordnik.com\">http://swagger.wordnik.com</a> or on irc.freenode.net, #swagger.",
@@ -315,7 +327,13 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
   /**
    * Sets the port to listen on.  0 means listen on any available port.
    */
-  override lazy val port: Int = { val s = new ServerSocket(0); try { s.getLocalPort } finally { s.close() } } //58468
+  override lazy val port: Int = {
+    val s = new ServerSocket(0); try {
+      s.getLocalPort
+    } finally {
+      s.close()
+    }
+  } //58468
 
   val swaggerJsonJValue = readJson("swagger.json")
 
@@ -325,7 +343,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
     JsonParser.parse(rdr)
   }
 
-  def generateApiDefinitions = get("/api-docs/swagger.json") {
+  def generateApiDefinitions = get("/api-docs") {
     val bd = JsonParser.parseOpt(body)
     bd must beSome[JValue] and {
       val j = bd.get
@@ -433,7 +451,9 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
               mm setMessage (mm.message + " in response messages collection")
           }
           def countsmatch = (af.size must_== ef.size).setMessage("The count for the responseMessages is different")
-          if (r.nonEmpty) { countsmatch and (r reduce (_ and _)) } else countsmatch
+          if (r.nonEmpty) {
+            countsmatch and (r reduce (_ and _))
+          } else countsmatch
         case "parameters" =>
           val JArray(af) = act \ fn
           val JArray(ef) = exp \ fn
@@ -487,9 +507,9 @@ class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet
     (apiOperation[Pet]("getPetById")
       summary "Find pet by ID"
       notes "Returns a pet based on ID"
-      responseMessages (ResponseMessage(400, "Invalid ID supplied").model[Error], ResponseMessage(404, "Pet not found"))
+      responseMessages(ResponseMessage(400, "Invalid ID supplied").model[Error], ResponseMessage(404, "Pet not found"))
       parameter pathParam[String]("petId").description("ID of pet that needs to be fetched")
-      produces ("application/json", "application/xml")
+      produces("application/json", "application/xml")
       authorizations ("oauth2"))
 
   get("/:petId", operation(getPet)) {
@@ -532,12 +552,12 @@ class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet
     (apiOperation[List[Pet]]("findPetsByStatus").deprecate
       summary "Finds Pets by status"
       notes "Multiple status values can be provided with comma separated strings"
-      produces ("application/json", "application/xml")
+      produces("application/json", "application/xml")
       responseMessage ResponseMessage(400, "Invalid status value")
       parameter (queryParam[String]("status").required.multiValued
-        description "Status values that need to be considered for filter"
-        defaultValue "available"
-        allowableValues ("available", "pending", "sold")))
+      description "Status values that need to be considered for filter"
+      defaultValue "available"
+      allowableValues("available", "pending", "sold")))
 
   get("/findByStatus", operation(findByStatus)) {
     data.findPetsByStatus(params("status"))
@@ -547,7 +567,7 @@ class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet
     (apiOperation[List[Pet]]("findPetsByTags").deprecate
       summary "Finds Pets by tags"
       notes "Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing."
-      produces ("application/json", "application/xml")
+      produces("application/json", "application/xml")
       responseMessage ResponseMessage(400, "Invalid tag value")
       parameter queryParam[String]("tags").description("Tags to filter by").multiValued)
 
@@ -569,11 +589,11 @@ class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupp
     (apiOperation[Order]("getOrderById")
       summary "Find purchase order by ID"
       notes "For valid response try integer IDs with value <= 5. Anything above 5 or nonintegers will generate API errors"
-      produces ("application/json", "application/xml")
+      produces("application/json", "application/xml")
       parameter pathParam[String]("orderId").description("ID of pet that needs to be fetched").required
-      responseMessages (
-        ResponseMessage(400, "Invalid ID supplied"),
-        ResponseMessage(404, "Order not found")
+      responseMessages(
+      ResponseMessage(400, "Invalid ID supplied"),
+      ResponseMessage(404, "Order not found")
       ))
 
   get("/order/:orderId", operation(getOrderOperation)) {
@@ -584,9 +604,9 @@ class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupp
     (apiOperation[Unit]("deleteOrder")
       summary "Delete purchase order by ID"
       notes "For valid response try integer IDs with value < 1000. Anything above 1000 or nonintegers will generate API errors"
-      responseMessages (
-        ResponseMessage(400, "Invalid ID supplied"),
-        ResponseMessage(404, "Order not found")
+      responseMessages(
+      ResponseMessage(400, "Invalid ID supplied"),
+      ResponseMessage(404, "Order not found")
       ))
 
   delete("/order/:orderId", operation(deleteOrderOperation)) {
@@ -618,20 +638,24 @@ class UserApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSuppo
 class SwaggerResourcesServlet(val swagger: Swagger) extends ScalatraServlet with NativeSwaggerBase
 
 case class Order(@ApiModelProperty(position = 1) id: Long,
-  @ApiModelProperty(position = 2, description = "Order Status", allowableValues = "placed,approved,delivered") status: String,
-  @ApiModelProperty(position = 3) petId: Long,
-  @ApiModelProperty(position = 4) quantity: Int,
-  @ApiModelProperty(position = 5) shipDate: DateTime)
+                 @ApiModelProperty(position = 2, description = "Order Status", allowableValues = "placed,approved,delivered") status: String,
+                 @ApiModelProperty(position = 3) petId: Long,
+                 @ApiModelProperty(position = 4) quantity: Int,
+                 @ApiModelProperty(position = 5) shipDate: DateTime)
+
 case class User(id: Long, username: String, password: String, email: String, firstName: String, lastName: String, phone: String, userStatus: Int)
+
 case class Pet(@ApiModelProperty(position = 3) id: Long,
-  @ApiModelProperty(position = 1) category: Category,
-  @ApiModelProperty(position = 2) name: String,
-  @ApiModelProperty(position = 6) photoUrls: List[String],
-  @ApiModelProperty(position = 4) tags: List[Tag],
-  @ApiModelProperty(position = 5, description = "pet status in the store", allowableValues = "available,pending,sold") status: String)
+               @ApiModelProperty(position = 1) category: Category,
+               @ApiModelProperty(position = 2) name: String,
+               @ApiModelProperty(position = 6) photoUrls: List[String],
+               @ApiModelProperty(position = 4) tags: List[Tag],
+               @ApiModelProperty(position = 5, description = "pet status in the store", allowableValues = "available,pending,sold") status: String)
 
 case class Tag(id: Long, name: String)
+
 case class Category(id: Long, name: String)
+
 case class Error(message: String)
 
 case class ApiResponse(code: String, msg: String)
