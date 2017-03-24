@@ -53,6 +53,9 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase {
       get("/") {
         renderSwagger2(swagger.docs.toList.asInstanceOf[List[ApiType]])
       }
+      get("/swagger.json") {
+        renderSwagger2(swagger.docs.toList.asInstanceOf[List[ApiType]])
+      }
     } else {
       get("""/([^.]+)*(?:\.(\w+))?""".r) {
         val doc :: fmt :: Nil = multiParams("captures").toList
