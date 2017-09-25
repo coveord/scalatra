@@ -397,6 +397,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
             (JString(operationId) must_== operation \ "operationId") and
               verifyOperation(operation, swaggerJsonJValue \ "paths" \ path \ method, operationId)
         }
+      case _ => None
     } reduce (_ and _) and (expectations must beEmpty)
   }
 
@@ -492,6 +493,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
 class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
 
   protected val applicationDescription = "Operations about pets"
+  override protected val swaggerTag = "Pets"
   override protected val applicationName = Some("pet")
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
@@ -593,6 +595,7 @@ class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet
 
 class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
   protected val applicationDescription = "Operations about store"
+  override protected val swaggerTag = "Store"
   override protected val applicationName = Some("store")
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
@@ -643,6 +646,7 @@ class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupp
 
 class UserApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
   protected val applicationDescription = "Operations about user"
+  override protected val swaggerTag = "User"
   override protected val applicationName = Some("user")
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)

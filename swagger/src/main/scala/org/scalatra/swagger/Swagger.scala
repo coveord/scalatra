@@ -418,7 +418,9 @@ case class Parameter(
   required: Boolean = true,
   //                     allowMultiple: Boolean = false,
   paramAccess: Option[String] = None,
-  position: Int = 0
+  position: Int = 0,
+  example: Option[String] = None,
+  deprecated: Boolean = false
 )
 
 case class ModelProperty(

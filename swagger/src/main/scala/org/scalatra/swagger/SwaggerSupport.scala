@@ -3,6 +3,7 @@ package swagger
 
 import javax.servlet.{ Filter, Servlet }
 
+import org.json4s.{ DefaultFormats, Formats }
 import org.scalatra.swagger.DataType.{ ContainerDataType, ValueDataType }
 import org.scalatra.swagger.reflect.Reflector
 import org.scalatra.util.NotNothing
@@ -143,6 +144,8 @@ object SwaggerSupportSyntax {
     protected[this] var _required: Option[Boolean] = None
     //    private[this] var _allowMultiple: Boolean = false
     private[this] var _paramAccess: Option[String] = None
+    private[this] var _example: Option[String] = None
+    private[this] var _deprecated: Boolean = false
 
     def dataType: DataType = _dataType
     def dataType(dataType: DataType): this.type = { _dataType = dataType; this }
@@ -152,6 +155,8 @@ object SwaggerSupportSyntax {
 
     def notes(notes: String): this.type = { _notes = notes.blankOption; this }
     def paramType(name: ParamType.ParamType): this.type = { _paramType = name; this }
+    def example(example: String): this.type = { _example = example.blankOption; this }
+    def deprecated(deprecated: Boolean): this.type = { _deprecated = deprecated; this }
 
     def fromBody: this.type = paramType(ParamType.Body)
     def fromPath: this.type = paramType(ParamType.Path)
@@ -182,6 +187,8 @@ object SwaggerSupportSyntax {
     def paramAccess = _paramAccess
     def allowableValues: AllowableValues = _allowableValues
     def isRequired: Boolean = paramType == ParamType.Path || _required.forall(identity)
+    def example: Option[String] = _example
+    def deprecated: Boolean = _deprecated
 
     def multiValued: this.type = {
       dataType match {
@@ -199,10 +206,13 @@ object SwaggerSupportSyntax {
     //    def allowsMultiple: Boolean = !SwaggerSupportSyntax.SingleValued.contains(paramType) && _allowMultiple
 
     def result =
-      Parameter(name, dataType, description, notes, paramType, defaultValue, allowableValues, isRequired)
+      Parameter(name, dataType, description, notes, paramType, defaultValue, allowableValues, isRequired, None, example = example, deprecated = deprecated)
   }
 
   class ParameterBuilder[T: Manifest](initialDataType: DataType) extends SwaggerParameterBuilder {
+
+    private implicit val formats: Formats = DefaultFormats
+
     dataType(initialDataType)
     private[this] var _defaultValue: Option[String] = None
     override def defaultValue = _defaultValue
@@ -527,6 +537,8 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
     }
   }
 
+  protected def swaggerTag: String
+
 }
 
 /**
@@ -540,12 +552,14 @@ trait SwaggerSupport extends ScalatraBase with SwaggerSupportBase with SwaggerSu
   protected def apiOperation[T: Manifest: NotNothing](nickname: String): OperationBuilder = {
     registerModel[T]()
     (new OperationBuilder(DataType[T])
-      nickname nickname)
+      nickname nickname
+      tags swaggerTag)
   }
   protected def apiOperation(nickname: String, model: Model): OperationBuilder = {
     registerModel(model)
     (new OperationBuilder(ValueDataType(model.id))
-      nickname nickname)
+      nickname nickname
+      tags swaggerTag)
   }
 
   /**

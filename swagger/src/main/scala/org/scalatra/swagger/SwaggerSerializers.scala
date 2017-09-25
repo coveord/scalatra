@@ -288,6 +288,15 @@ object SwaggerSerializers {
 
   class ParameterSerializer extends CustomSerializer[Parameter](implicit formats => ({
     case json: JObject =>
+
+      def jValueToBoolean(o: JValue): Boolean = {
+        o match {
+          case JString(s) => s.toBoolean
+          case JBool(b) => b
+          case _ => false
+        }
+      }
+
       val t = readDataType(json)
       Parameter(
         (json \ "name").getAsOrElse(""),
@@ -304,22 +313,26 @@ object SwaggerSerializers {
           case _ => None
         },
         (json \ "allowableValues").extract[AllowableValues],
-        json \ "required" match {
-          case JString(s) => s.toBoolean
-          case JBool(value) => value
-          case _ => false
+        jValueToBoolean(json \ "required"),
+        (json \ "paramAccess").getAs[String].flatMap(_.blankOption),
+        json \ "position" match {
+          case JInt(num) => num.toInt
+          case _ => 0
         },
-        (json \ "paramAccess").getAs[String].flatMap(_.blankOption)
+        (json \ "example").getAs[String].flatMap(_.blankOption),
+        jValueToBoolean(json \ "deprecated")
       )
   }, {
     case x: Parameter =>
       val output =
         ("name" -> x.name) ~
           ("description" -> x.description) ~
-          ("defaultValue" -> x.defaultValue) ~
+          ("default" -> x.defaultValue) ~
           ("required" -> x.required) ~
           ("paramType" -> x.paramType.toString) ~
-          ("paramAccess" -> x.paramAccess)
+          ("paramAccess" -> x.paramAccess) ~
+          ("example" -> x.example) ~
+          ("deprecated" -> x.deprecated)
 
       (output merge writeDataType(x.`type`)) merge Extraction.decompose(x.allowableValues)
   }))

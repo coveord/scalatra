@@ -46,6 +46,8 @@ class ApiController()(implicit val swagger: Swagger) extends ScalatraServlet wit
   protected val applicationDescription: String =
     """The Hacker Tracker API. Exposes operations for adding hackers and retrieving lists of hackers."""
 
+  override protected val swaggerTag = "Hackers"
+
   val listHackers = (apiOperation[List[Hacker]]("listHackers")
     summary "Show all hackers"
     notes "Shows all available hackers.")
