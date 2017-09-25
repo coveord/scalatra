@@ -15,7 +15,7 @@ trait CommandExecutors {
   implicit def syncExecutor[T <: Command, S](handler: T => ModelValidation[S]): CommandExecutor[T, ModelValidation[S]] =
     new BlockingCommandExecutor(handler)
 
-  implicit def syncModelExecutor[T <: Command <% S, S](handler: S => ModelValidation[S]): CommandExecutor[T, ModelValidation[S]] =
+  implicit def syncModelExecutor[T <: Command, S](handler: S => ModelValidation[S])(implicit T: T => S): CommandExecutor[T, ModelValidation[S]] =
     new BlockingModelExecutor[T, S](handler)
 
   implicit def asyncExecutor[T <: Command, S](handler: T => Future[ModelValidation[S]])(implicit executionContext: ExecutionContext): CommandExecutor[T, Future[ModelValidation[S]]] =
@@ -56,7 +56,8 @@ abstract class BlockingExecutor[T <: Command, S](handle: T => ModelValidation[S]
           def plur(count: Int) = if (count == 1) "failure" else "failures"
           val resultLog = r.fold(
             { failures ⇒ s"with ${failures.size} ${plur(failures.size)}\n${failures.list}" },
-            { _ ⇒ "successfully" })
+            { _ ⇒ "successfully" }
+          )
           logger.debug(s"Command [${cmd.getClass.getName}] executed $resultLog")
           r
         case Fail(t) ⇒
@@ -97,7 +98,7 @@ class BlockingCommandExecutor[T <: Command, S](handle: T => ModelValidation[S]) 
  * @tparam T The type of model
  * @tparam S The success result type
  */
-class BlockingModelExecutor[T <: Command <% S, S](handle: S => ModelValidation[S]) extends BlockingExecutor[T, S](handle(_))
+class BlockingModelExecutor[T <: Command, S](handle: S => ModelValidation[S])(implicit T: T => S) extends BlockingExecutor[T, S](handle(_))
 
 abstract class AsyncExecutor[T <: Command, S](handle: T => Future[ModelValidation[S]])(implicit executionContext: ExecutionContext) extends CommandExecutor[T, Future[ModelValidation[S]]](handle) {
   @transient private[this] val logger = Logger(getClass)
@@ -111,7 +112,8 @@ abstract class AsyncExecutor[T <: Command, S](handle: T => Future[ModelValidatio
           def plur(count: Int) = if (count == 1) "failure" else "failures"
           val resultLog = r.fold(
             { failures ⇒ s"with ${failures.size} ${plur(failures.size)}.\n${failures.list}" },
-            { _ ⇒ "successfully" })
+            { _ ⇒ "successfully" }
+          )
           logger.debug(s"Command [${cmd.getClass.getName}] executed $resultLog")
       }
 

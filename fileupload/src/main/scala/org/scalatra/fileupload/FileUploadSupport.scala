@@ -1,7 +1,7 @@
 package org.scalatra
 package fileupload
 
-import java.util.{ HashMap => JHashMap, List => JList, Map => JMap }
+import java.util.{ List => JList }
 import javax.servlet.http.{ HttpServletRequest, HttpServletRequestWrapper, HttpServletResponse }
 
 import org.apache.commons.fileupload.disk.{ DiskFileItem, DiskFileItemFactory }
@@ -21,13 +21,15 @@ import scala.collection.JavaConverters._
  * @note Once any handler with FileUploadSupport has accessed the request, the fileParams returned by FileUploadSupport will remain fixed for
  * the lifetime of the request.
  */
-@deprecated(message = "Deprecated in favor of Servlet 3.0 API's multipart features. " +
+@deprecated(
+  message = "Deprecated in favor of Servlet 3.0 API's multipart features. " +
   "Please use org.scalatra.servlet.FileUploadSupport instead.",
-  since = "2.1.0")
+  since = "2.1.0"
+)
 trait FileUploadSupport extends ServletBase {
   import org.scalatra.fileupload.FileUploadSupport._
 
-  override def handle(req: HttpServletRequest, resp: HttpServletResponse) {
+  override def handle(req: HttpServletRequest, resp: HttpServletResponse): Unit = {
     val req2 = try {
       if (isMultipartContent(req)) {
         val bodyParams = extractMultipartParams(req)
@@ -106,9 +108,9 @@ trait FileUploadSupport extends ServletBase {
 
   private def wrapRequest(req: HttpServletRequest, formMap: Map[String, Seq[String]]) = {
     val wrapped = new HttpServletRequestWrapper(req) {
-      override def getParameter(name: String) = formMap.get(name) map { _.head } getOrElse null
+      override def getParameter(name: String) = formMap.get(name).map { _.head }.orNull
       override def getParameterNames = formMap.keysIterator.asJavaEnumeration
-      override def getParameterValues(name: String) = formMap.get(name) map { _.toArray } getOrElse null
+      override def getParameterValues(name: String) = formMap.get(name).map { _.toArray }.orNull
       override def getParameterMap = (formMap transform { (k, v) => v.toArray }).asJava
     }
     wrapped

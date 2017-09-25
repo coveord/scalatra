@@ -2,15 +2,14 @@ import com.typesafe.sbt.pgp.PgpKeys
 import scala.xml._
 import java.net.URL
 import org.scalatra.sbt.ScalatraPlugin.scalatraWithWarOverlays
-import com.typesafe.sbt.SbtScalariform.scalariformSettings
 import Dependencies._
 import UnidocKeys._
 
 lazy val scalatraSettings = Seq(
   organization := "org.scalatra",
-  crossScalaVersions := Seq("2.12.0", "2.11.8"),
+  crossScalaVersions := Seq("2.12.1", "2.11.8"),
   scalaVersion := crossScalaVersions.value.head,
-  scalacOptions ++= Seq("-target:jvm-1.8", "-unchecked", "-deprecation", /*"-Yinline-warnings",*/ "-Xcheckinit", "-encoding", "utf8", "-feature"),
+  scalacOptions ++= Seq("-target:jvm-1.8", "-unchecked", "-deprecation", /*"-Yinline-warnings",*/ "-Xcheckinit", "-encoding", "utf8", "-feature", "-Ywarn-unused-import"),
   scalacOptions ++= Seq("-language:higherKinds", "-language:postfixOps", "-language:implicitConversions", "-language:reflectiveCalls", "-language:existentials"),
   manifestSetting,
   resolvers ++= Seq(
@@ -23,7 +22,9 @@ lazy val scalatraSettings = Seq(
     "org.scala-lang" %  "scala-reflect"  % scalaVersion.value,
     "org.scala-lang" %  "scala-compiler" % scalaVersion.value
   )
-) ++ mavenCentralFrouFrou ++ scalariformSettings
+) ++ mavenCentralFrouFrou ++ Seq(Compile, Test).flatMap(c =>
+  scalacOptions in (c, console) --= Seq("-Ywarn-unused-import")
+)
 
 lazy val scalatraProject = Project(
   id = "scalatra-project",

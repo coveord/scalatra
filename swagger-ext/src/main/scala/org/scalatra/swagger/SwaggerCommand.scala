@@ -15,7 +15,8 @@ object SwaggerCommandSupport {
       ValueSource.Body -> ParamType.Body,
       ValueSource.Header -> ParamType.Header,
       ValueSource.Query -> ParamType.Query,
-      ValueSource.Path -> ParamType.Path)
+      ValueSource.Path -> ParamType.Path
+    )
 
   def parametersFromCommand[T <: Command](obj: T)(implicit mf: Manifest[T]): (List[Parameter], Option[Model]) = {
     addModelFromCommand(obj, createParameterList(obj))
@@ -36,7 +37,8 @@ object SwaggerCommandSupport {
             if (f.isRequired) None else f.defaultValue.flatMap(_.toString.blankOption),
             if (f.allowableValues.nonEmpty) AllowableValues(f.allowableValues) else AllowableValues.AnyValue,
             required = f.isRequired,
-            position = f.position) :: lst
+            position = f.position
+          ) :: lst
         }
       } else lst
     }
@@ -53,7 +55,8 @@ object SwaggerCommandSupport {
           model.description,
           None,
           ParamType.Body,
-          None)
+          None
+        )
       (bodyParam :: parameters, Some(model))
     } else (parameters, None)
   }
@@ -67,7 +70,7 @@ object SwaggerCommandSupport {
 
   class CommandOperationBuilder[B <: SwaggerOperationBuilder[_]](registerModel: Model => Unit, underlying: B) {
     def parametersFromCommand[C <: Command: Manifest]: B =
-      parametersFromCommand(manifest[C].runtimeClass.newInstance().asInstanceOf[C])
+      parametersFromCommand(manifest[C].runtimeClass.getDeclaredConstructor().newInstance().asInstanceOf[C])
 
     def parametersFromCommand[C <: Command: Manifest](cmd: => C): B = {
       SwaggerCommandSupport.parametersFromCommand(cmd) match {
@@ -95,7 +98,7 @@ trait SwaggerCommandSupport { this: ScalatraBase with SwaggerSupportBase with Sw
     new CommandOperationBuilder(registerModel(_), underlying)
 
   private[this] def parametersFromCommand[T <: CommandType](implicit mf: Manifest[T]): List[Parameter] = {
-    parametersFromCommand(mf.runtimeClass.newInstance().asInstanceOf[T])
+    parametersFromCommand(mf.runtimeClass.getDeclaredConstructor().newInstance().asInstanceOf[T])
   }
 
   private[this] def parametersFromCommand[T <: CommandType](cmd: => T)(implicit mf: Manifest[T]): List[Parameter] = {

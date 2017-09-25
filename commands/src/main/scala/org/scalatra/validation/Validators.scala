@@ -11,8 +11,7 @@ import org.scalatra.util.RicherString._
 
 import scala.util.control.Exception._
 import scala.util.matching.Regex
-import scalaz.Scalaz._
-import scalaz._
+import scalaz.syntax.validation._
 
 object Validators {
   trait Validator[TValue] {
@@ -79,30 +78,31 @@ object Validators {
     new PredicateValidator[String](
       fieldName,
       _ == confirmationValue,
-      messageFormat.format(confirmationFieldName.underscore.humanize.toLowerCase(ENGLISH)))
+      messageFormat.format(confirmationFieldName.underscore.humanize.toLowerCase(ENGLISH))
+    )
 
   /**
    * Must be greater than the min param.
    */
-  def greaterThan[T <% Ordered[T]](fieldName: String, min: T, messageFormat: String = "%%s must be greater than %s."): Validator[T] =
+  def greaterThan[T](fieldName: String, min: T, messageFormat: String = "%%s must be greater than %s.")(implicit T: T => Ordered[T]): Validator[T] =
     new PredicateValidator[T](fieldName, _ > min, messageFormat format min.toString)
 
   /**
    * Must be less than the max param.
    */
-  def lessThan[T <% Ordered[T]](fieldName: String, max: T, messageFormat: String = "%%s must be less than %s."): Validator[T] =
+  def lessThan[T](fieldName: String, max: T, messageFormat: String = "%%s must be less than %s.")(implicit T: T => Ordered[T]): Validator[T] =
     new PredicateValidator[T](fieldName, _ < max, messageFormat format max.toString)
 
   /**
    * Must be greater than or equal to the min param.
    */
-  def greaterThanOrEqualTo[T <% Ordered[T]](fieldName: String, min: T, messageFormat: String = "%%s must be greater than or equal to %s."): Validator[T] =
+  def greaterThanOrEqualTo[T](fieldName: String, min: T, messageFormat: String = "%%s must be greater than or equal to %s.")(implicit T: T => Ordered[T]): Validator[T] =
     new PredicateValidator[T](fieldName, _ >= min, messageFormat format min)
 
   /**
    * Must be less than or equal to the max param.
    */
-  def lessThanOrEqualTo[T <% Ordered[T]](fieldName: String, max: T, messageFormat: String = "%%s must be less than or equal to %s."): Validator[T] =
+  def lessThanOrEqualTo[T](fieldName: String, max: T, messageFormat: String = "%%s must be less than or equal to %s.")(implicit T: T => Ordered[T]): Validator[T] =
     new PredicateValidator[T](fieldName, _ <= max, messageFormat.format(max))
 
   /**
@@ -110,14 +110,16 @@ object Validators {
    */
   def minLength(fieldName: String, min: Int, messageFormat: String = "%%s must be at least %s characters long."): Validator[String] =
     new PredicateValidator[String](
-      fieldName, _.size >= min, messageFormat.format(min))
+      fieldName, _.size >= min, messageFormat.format(min)
+    )
 
   /**
    * Must be included in the expected collection.
    */
   def oneOf[TResult](fieldName: String, messageFormat: String = "%%s must be one of %s.", expected: Seq[TResult]): Validator[TResult] =
     new PredicateValidator[TResult](
-      fieldName, expected.contains, messageFormat format expected.mkString("[", ", ", "]"))
+      fieldName, expected.contains, messageFormat format expected.mkString("[", ", ", "]")
+    )
 
   /**
    * Checks if the value of the data is a value of the specified enum.

@@ -26,7 +26,10 @@ trait Inflector {
     spacesPattern.replaceAllIn(
       secondPattern.replaceAllIn(
         firstPattern.replaceAllIn(
-          word, replacementPattern), replacementPattern), "_").toLowerCase
+          word, replacementPattern
+        ), replacementPattern
+      ), "_"
+    ).toLowerCase
   }
 
   def capitalize(word: String): String =
@@ -86,9 +89,9 @@ trait Inflector {
   private var singulars = List[Rule]()
   private var uncountables = List[String]()
 
-  def addPlural(pattern: String, replacement: String) { plurals ::= pattern -> replacement }
-  def addSingular(pattern: String, replacement: String) { singulars ::= pattern -> replacement }
-  def addIrregular(singular: String, plural: String) {
+  def addPlural(pattern: String, replacement: String): Unit = { plurals ::= pattern -> replacement }
+  def addSingular(pattern: String, replacement: String): Unit = { singulars ::= pattern -> replacement }
+  def addIrregular(singular: String, plural: String): Unit = {
     plurals ::= (("(" + singular(0) + ")" + singular.substring(1) + "$") -> ("$1" + plural.substring(1)))
     singulars ::= (("(" + plural(0) + ")" + plural.substring(1) + "$") -> ("$1" + singular.substring(1)))
   }

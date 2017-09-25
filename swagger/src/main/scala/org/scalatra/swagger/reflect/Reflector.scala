@@ -3,7 +3,6 @@ package org.scalatra.swagger.reflect
 import java.lang.reflect._
 import java.sql.Timestamp
 import java.util.Date
-import java.{ util => jutil }
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Exception._
@@ -163,8 +162,7 @@ object Reflector {
 
   def defaultValue(compClass: Class[_], compObj: AnyRef, argIndex: Int) = {
     allCatch.withApply(_ => None) {
-      Option(compClass.getMethod("%s$%d".format(ConstructorDefault, argIndex + 1))) map {
-        meth => () => meth.invoke(compObj)
+      Option(compClass.getMethod("%s$%d".format(ConstructorDefault, argIndex + 1))) map { meth => () => meth.invoke(compObj)
       }
     }
   }

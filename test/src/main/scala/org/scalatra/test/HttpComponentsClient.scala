@@ -57,7 +57,8 @@ trait HttpComponentsClient extends Client {
     path: String,
     queryParams: Iterable[(String, String)] = Map.empty,
     headers: Iterable[(String, String)] = Seq.empty,
-    body: Array[Byte] = null)(f: => A): A =
+    body: Array[Byte] = null
+  )(f: => A): A =
     {
       val client = createClient
       val queryString = toQueryString(queryParams)
@@ -78,7 +79,8 @@ trait HttpComponentsClient extends Client {
     path: String,
     params: Iterable[(String, String)],
     headers: Iterable[(String, String)],
-    files: Iterable[(String, Any)])(f: => A): A =
+    files: Iterable[(String, Any)]
+  )(f: => A): A =
     {
       val client = createClient
       val url = "%s/%s".format(baseUrl, path)
@@ -99,7 +101,7 @@ trait HttpComponentsClient extends Client {
     builder.build()
   }
 
-  private def attachHeaders(req: HttpRequestBase, headers: Iterable[(String, String)]) {
+  private def attachHeaders(req: HttpRequestBase, headers: Iterable[(String, String)]): Unit = {
     headers.foreach { case (name, value) => req.addHeader(name, value) }
   }
 
@@ -120,7 +122,7 @@ trait HttpComponentsClient extends Client {
     req
   }
 
-  private def attachBody(req: HttpRequestBase, body: Array[Byte]) {
+  private def attachBody(req: HttpRequestBase, body: Array[Byte]): Unit = {
     if (body == null) return
 
     req match {
@@ -132,7 +134,8 @@ trait HttpComponentsClient extends Client {
           throw new IllegalArgumentException(
             """|HTTP %s does not support enclosing an entity.
                |Please remove the value from `body` parameter
-               |or use POST/PUT/PATCH instead.""".stripMargin.format(req.getMethod))
+               |or use POST/PUT/PATCH instead.""".stripMargin.format(req.getMethod)
+          )
         }
     }
   }
@@ -140,7 +143,8 @@ trait HttpComponentsClient extends Client {
   private def attachMultipartBody(
     req: HttpRequestBase,
     params: Iterable[(String, String)],
-    files: Iterable[(String, Any)]) {
+    files: Iterable[(String, Any)]
+  ): Unit = {
 
     if (params.isEmpty && files.isEmpty) {
       return
@@ -165,7 +169,8 @@ trait HttpComponentsClient extends Client {
         throw new IllegalArgumentException(
           """|HTTP %s does not support enclosing an entity.
              |Please remove the value from `body` parameter
-             |or use POST/PUT/PATCH instead.""".stripMargin.format(req.getMethod))
+             |or use POST/PUT/PATCH instead.""".stripMargin.format(req.getMethod)
+        )
     }
   }
 
@@ -176,7 +181,8 @@ trait HttpComponentsClient extends Client {
     case s: Any =>
       throw new IllegalArgumentException(
         ("The body type for file parameter '%s' could not be inferred. The " +
-          "supported types are java.util.File and org.scalatra.test.Uploadable").format(name))
+          "supported types are java.util.File and org.scalatra.test.Uploadable").format(name)
+      )
   }
 }
 
@@ -195,7 +201,7 @@ case class UploadableBody(uploadable: Uploadable) extends ContentBody {
 
   def getFilename = uploadable.fileName
 
-  def writeTo(out: OutputStream) {
+  def writeTo(out: OutputStream): Unit = {
     out.write(uploadable.content)
   }
 }

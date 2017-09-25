@@ -76,14 +76,15 @@ trait JsonOutput[T] extends ApiFormats with JsonMethods[T] {
       }
   }: RenderPipeline) orElse super.renderPipeline
 
-  protected def writeJsonAsXml(json: JValue, writer: Writer) {
+  protected def writeJsonAsXml(json: JValue, writer: Writer): Unit = {
     if (json != JNothing)
       XML.write(
         response.writer,
         xmlRootNode.copy(child = toXml(json)),
         response.characterEncoding.get,
         xmlDecl = true,
-        doctype = null)
+        doctype = null
+      )
   }
 
   protected def writeJson(json: JValue, writer: Writer)

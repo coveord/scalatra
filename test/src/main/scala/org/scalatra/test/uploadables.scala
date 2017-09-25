@@ -13,7 +13,8 @@ abstract class Uploadable {
 
 case class FilePart(
   file: File,
-  contentType: String = "application/octet-stream")
+  contentType: String = "application/octet-stream"
+)
     extends Uploadable {
 
   lazy val content = {
@@ -22,7 +23,7 @@ case class FilePart(
     val buf = new Array[Byte](4096)
 
     @tailrec
-    def copyStream() {
+    def copyStream(): Unit = {
       val bytesRead = fin.read(buf)
       if (bytesRead > 0) {
         bos.write(buf, 0, bytesRead)
@@ -46,7 +47,8 @@ case class FilePart(
 case class BytesPart(
   fileName: String,
   content: Array[Byte],
-  contentType: String = "application/octet-stream")
+  contentType: String = "application/octet-stream"
+)
     extends Uploadable {
 
   def contentLength = content.length.toLong

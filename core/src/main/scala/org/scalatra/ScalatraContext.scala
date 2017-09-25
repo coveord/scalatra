@@ -8,9 +8,11 @@ import org.scalatra.servlet.{ HttpServletRequestReadOnly, ServletApiImplicits }
 object ScalatraContext {
 
   private class StableValuesContext(
-    implicit val request: HttpServletRequest,
+    implicit
+    val request: HttpServletRequest,
     val response: HttpServletResponse,
-    val servletContext: ServletContext) extends ScalatraContext
+    val servletContext: ServletContext
+  ) extends ScalatraContext
 }
 
 trait ScalatraContext
@@ -29,7 +31,7 @@ trait ScalatraContext
   /**
    * Gets the content type of the current response.
    */
-  def contentType: String = response.contentType getOrElse null
+  def contentType: String = response.contentType.orNull
 
   /**
    * Gets the status code of the current response.

@@ -8,7 +8,7 @@ class CorsSupportSpec extends ScalatraSpec {
 
     get("/") { "OK" }
 
-    override def initialize(config: ConfigT) {
+    override def initialize(config: ConfigT): Unit = {
       config.context.setInitParameter(CorsSupport.AllowedOriginsKey, "http://www.example.com")
       config.context.setInitParameter(CorsSupport.AllowedHeadersKey, "X-Requested-With,Authorization,Content-Type,Accept,Origin")
       config.context.setInitParameter(CorsSupport.AllowedMethodsKey, "GET,HEAD,POST")
@@ -19,6 +19,7 @@ class CorsSupportSpec extends ScalatraSpec {
   def is =
     "The CORS support should" ^
       "augment a valid simple request" ! context.validSimpleRequest ^
+      "not respond with allow origin header if request from unallowed origin" ! context.dontReturnAllowOriginHeaderForRequestFromOriginNotInAllowedOriginsList ^
       "not touch a regular request" ! context.dontTouchRegularRequest ^
       "respond to a valid preflight request" ! context.validPreflightRequest ^
       "respond to a valid preflight request with headers" ! context.validPreflightRequestWithHeaders ^ end
@@ -29,6 +30,13 @@ class CorsSupportSpec extends ScalatraSpec {
         response.getHeader(CorsSupport.AccessControlAllowOriginHeader) must_== "http://www.example.com"
       }
     }
+
+    def dontReturnAllowOriginHeaderForRequestFromOriginNotInAllowedOriginsList = {
+      get("/", headers = Map(CorsSupport.OriginHeader -> "http://www.hello.com")) {
+        response.getHeader(CorsSupport.AccessControlAllowOriginHeader) must beNull
+      }
+    }
+
     def dontTouchRegularRequest = {
       get("/") {
         response.getHeader(CorsSupport.AccessControlAllowOriginHeader) must beNull
@@ -46,7 +54,8 @@ class CorsSupportSpec extends ScalatraSpec {
         CorsSupport.OriginHeader -> "http://www.example.com",
         CorsSupport.AccessControlRequestMethodHeader -> "GET",
         CorsSupport.AccessControlRequestHeadersHeader -> "Origin, Authorization, Accept",
-        "Content-Type" -> "application/json")
+        "Content-Type" -> "application/json"
+      )
       options("/", headers = hdrs) {
         response.getHeader(CorsSupport.AccessControlAllowOriginHeader) must_== "http://www.example.com"
         response.getHeader(CorsSupport.AccessControlAllowMethodsHeader) must_== "GET,HEAD,POST"
@@ -61,7 +70,7 @@ class DisabledCorsSupportSpec extends ScalatraSpec {
 
     get("/") { "OK" }
 
-    override def initialize(config: ConfigT) {
+    override def initialize(config: ConfigT): Unit = {
       config.context.setInitParameter(CorsSupport.AllowedOriginsKey, "http://www.example.com")
       config.context.setInitParameter(CorsSupport.AllowedHeadersKey, "X-Requested-With,Authorization,Content-Type,Accept,Origin")
       config.context.setInitParameter(CorsSupport.AllowedMethodsKey, "GET,HEAD,POST")
