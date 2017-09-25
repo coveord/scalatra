@@ -3,7 +3,6 @@ package swagger
 
 import javax.servlet.{ Filter, Servlet }
 
-import org.json4s.{ DefaultFormats, Formats }
 import org.scalatra.swagger.DataType.{ ContainerDataType, ValueDataType }
 import org.scalatra.swagger.reflect.Reflector
 import org.scalatra.util.NotNothing
@@ -206,12 +205,21 @@ object SwaggerSupportSyntax {
     //    def allowsMultiple: Boolean = !SwaggerSupportSyntax.SingleValued.contains(paramType) && _allowMultiple
 
     def result =
-      Parameter(name, dataType, description, notes, paramType, defaultValue, allowableValues, isRequired, None, example = example, deprecated = deprecated)
+      Parameter(
+        name = name,
+        `type` = dataType,
+        description = description,
+        notes = notes,
+        paramType = paramType,
+        defaultValue = defaultValue,
+        allowableValues = allowableValues,
+        required = isRequired,
+        example = example,
+        deprecated = deprecated
+      )
   }
 
   class ParameterBuilder[T: Manifest](initialDataType: DataType) extends SwaggerParameterBuilder {
-
-    private implicit val formats: Formats = DefaultFormats
 
     dataType(initialDataType)
     private[this] var _defaultValue: Option[String] = None
