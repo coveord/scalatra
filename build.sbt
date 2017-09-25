@@ -9,7 +9,6 @@ lazy val scalatraSettings = Seq(
   organization := "org.scalatra",
   crossScalaVersions := Seq("2.12.1", "2.11.8"),
   scalaVersion := crossScalaVersions.value.head,
-  isSnapshot := true,
   scalacOptions ++= Seq("-target:jvm-1.8", "-unchecked", "-deprecation", /*"-Yinline-warnings",*/ "-Xcheckinit", "-encoding", "utf8", "-feature", "-Ywarn-unused-import"),
   scalacOptions ++= Seq("-language:higherKinds", "-language:postfixOps", "-language:implicitConversions", "-language:reflectiveCalls", "-language:existentials"),
   manifestSetting,
