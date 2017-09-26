@@ -143,8 +143,7 @@ object SwaggerSupportSyntax {
     protected[this] var _required: Option[Boolean] = None
     //    private[this] var _allowMultiple: Boolean = false
     private[this] var _paramAccess: Option[String] = None
-    private[this] var _example: Option[String] = None
-    private[this] var _deprecated: Boolean = false
+    private[this] var _position: Option[Int] = None
 
     def dataType: DataType = _dataType
     def dataType(dataType: DataType): this.type = { _dataType = dataType; this }
@@ -152,10 +151,10 @@ object SwaggerSupportSyntax {
     def description(description: String): this.type = { _description = description.blankOption; this }
     def description(description: Option[String]): this.type = { _description = description.flatMap(_.blankOption); this }
 
+    def position(position: Int): this.type = { _position = Some(position); this }
+
     def notes(notes: String): this.type = { _notes = notes.blankOption; this }
     def paramType(name: ParamType.ParamType): this.type = { _paramType = name; this }
-    def example(example: String): this.type = { _example = example.blankOption; this }
-    def deprecated(deprecated: Boolean): this.type = { _deprecated = deprecated; this }
 
     def fromBody: this.type = paramType(ParamType.Body)
     def fromPath: this.type = paramType(ParamType.Path)
@@ -186,8 +185,6 @@ object SwaggerSupportSyntax {
     def paramAccess = _paramAccess
     def allowableValues: AllowableValues = _allowableValues
     def isRequired: Boolean = paramType == ParamType.Path || _required.forall(identity)
-    def example: Option[String] = _example
-    def deprecated: Boolean = _deprecated
 
     def multiValued: this.type = {
       dataType match {
@@ -214,8 +211,7 @@ object SwaggerSupportSyntax {
         defaultValue = defaultValue,
         allowableValues = allowableValues,
         required = isRequired,
-        example = example,
-        deprecated = deprecated
+        position = _position
       )
   }
 

@@ -85,20 +85,31 @@ object Swagger {
   import org.scalatra.util.RicherString._
   def modelToSwagger[T](implicit mf: Manifest[T]): Option[Model] = modelToSwagger(Reflector.scalaTypeOf[T])
 
-  private[this] def toModelProperty(descr: ClassDescriptor, position: Option[Int] = None, required: Boolean = true, description: Option[String] = None, allowableValues: String = "")(prop: PropertyDescriptor) = {
+  private[this] def toModelProperty(
+    descr: ClassDescriptor,
+    position: Option[Int] = None,
+    required: Boolean = true,
+    description: Option[String] = None,
+    allowableValues: String = "",
+    example: Option[String] = None,
+    default: Option[String] = None
+  )(prop: PropertyDescriptor) = {
     val ctorParam = if (!prop.returnType.isOption) descr.mostComprehensive.find(_.name == prop.name) else None
     //    if (descr.simpleName == "Pet") println("converting property: " + prop)
     val mp = ModelProperty(
-      DataType.fromScalaType(if (prop.returnType.isOption) prop.returnType.typeArgs.head else prop.returnType),
-      if (position.isDefined && position.forall(_ >= 0)) position.get else ctorParam.map(_.argIndex).getOrElse(position.getOrElse(0)),
+      `type` = DataType.fromScalaType(if (prop.returnType.isOption) prop.returnType.typeArgs.head else prop.returnType),
+      position = if (position.exists(_ >= 0)) position else ctorParam.map(_.argIndex),
       required = required && !prop.returnType.isOption,
       description = description.flatMap(_.blankOption),
-      allowableValues = convertToAllowableValues(allowableValues)
+      allowableValues = convertToAllowableValues(allowableValues),
+      example = example.flatMap(_.blankOption),
+      default = default.flatMap(_.blankOption)
     )
     //    if (descr.simpleName == "Pet") println("The property is: " + mp)
     prop.name -> mp
   }
   def modelToSwagger(klass: ScalaType): Option[Model] = {
+
     if (Reflector.isPrimitive(klass.erasure) || Reflector.isExcluded(klass.erasure, excludes.toSeq)) None
     else {
       val name = klass.simpleName
@@ -109,7 +120,15 @@ object Swagger {
       val fields = klass.erasure.getDeclaredFields.toList collect {
         case f: Field if f.getAnnotation(classOf[ApiModelProperty]) != null =>
           val annot = f.getAnnotation(classOf[ApiModelProperty])
-          val asModelProperty = toModelProperty(descr, Some(annot.position()), annot.required(), annot.description().blankOption, annot.allowableValues())_
+          val asModelProperty = toModelProperty(
+            descr = descr,
+            position = Some(annot.position()),
+            required = annot.required(),
+            description = Option(annot.description()),
+            allowableValues = annot.allowableValues(),
+            example = Option(annot.example()),
+            default = Option(annot.defaultValue())
+          )_
           descr.properties.find(_.mangledName == f.getName) map asModelProperty
 
         case f: Field =>
@@ -117,7 +136,8 @@ object Swagger {
           descr.properties.find(_.mangledName == f.getName) map asModelProperty
 
       }
-
+      val a = Seq()
+      a.flatten
       val result = apiModel map { am =>
         Model(name, name, klass.fullName.blankOption, properties = fields.flatten, baseModel = am.parent.getName.blankOption, discriminator = am.discriminator.blankOption)
       } orElse Some(Model(name, name, klass.fullName.blankOption, properties = fields.flatten))
@@ -418,18 +438,18 @@ case class Parameter(
   required: Boolean = true,
   //                     allowMultiple: Boolean = false,
   paramAccess: Option[String] = None,
-  position: Int = 0,
-  example: Option[String] = None,
-  deprecated: Boolean = false
+  position: Option[Int] = None
 )
 
 case class ModelProperty(
   `type`: DataType,
-  position: Int = 0,
+  position: Option[Int] = None,
   required: Boolean = false,
   description: Option[String] = None,
   allowableValues: AllowableValues = AllowableValues.AnyValue,
-  items: Option[ModelRef] = None
+  items: Option[Model] = None,
+  example: Option[String] = None,
+  default: Option[String] = None
 )
 
 case class Model(
