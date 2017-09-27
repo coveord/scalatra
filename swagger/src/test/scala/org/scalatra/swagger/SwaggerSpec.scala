@@ -397,6 +397,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
             (JString(operationId) must_== operation \ "operationId") and
               verifyOperation(operation, swaggerJsonJValue \ "paths" \ path \ method, operationId)
         }
+      case _ => None
     } reduce (_ and _) and (expectations must beEmpty)
   }
 

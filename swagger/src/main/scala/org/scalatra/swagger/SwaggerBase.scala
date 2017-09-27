@@ -143,8 +143,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                           ("consumes" -> operation.consumes) ~!
                           ("produces" -> operation.produces) ~!
                           ("tags" -> operation.tags) ~
-                          ("deprecated" -> operation.deprecated) ~
-                          ("parameters" -> operation.parameters.map { parameter =>
+                          ("parameters" -> operation.parameters.sortBy(_.position).map { parameter =>
                             ("name" -> parameter.name) ~
                               ("description" -> parameter.description) ~
                               ("required" -> parameter.required) ~
@@ -185,11 +184,18 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
               ("definitions" -> docs.flatMap { doc =>
                 doc.models.map {
                   case (name, model) =>
-                    (name ->
-                      ("properties" -> model.properties.map {
-                        case (name, property) =>
-                          (name -> generateDataType(property.`type`))
-                      }.toMap))
+                    val beyondMaxPosition = if (model.properties.nonEmpty) {
+                      model.properties.map(_._2.position.getOrElse(0)).max + 1
+                    } else {
+                      0
+                    }
+                    name ->
+                      ("properties" -> model.properties.sortBy(_._2.position.getOrElse(beyondMaxPosition)).map {
+                        case (propName, property) =>
+                          propName -> JObject(generateDataType(property.`type`)) ~
+                            ("default" -> property.default) ~
+                            ("example" -> property.example)
+                      }.toMap)
                 }
               }.toMap) ~
               ("securityDefinitions" -> (swagger.authorizations.flatMap { auth =>

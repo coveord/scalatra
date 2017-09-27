@@ -37,7 +37,7 @@ object SwaggerCommandSupport {
             if (f.isRequired) None else f.defaultValue.flatMap(_.toString.blankOption),
             if (f.allowableValues.nonEmpty) AllowableValues(f.allowableValues) else AllowableValues.AnyValue,
             required = f.isRequired,
-            position = f.position
+            position = Some(f.position)
           ) :: lst
         }
       } else lst
@@ -63,7 +63,12 @@ object SwaggerCommandSupport {
 
   private[this] def modelFromCommand[T <: Command](cmd: T, fields: List[Parameter]) = {
     val modelFields = fields map { f =>
-      f.name -> ModelProperty(f.`type`, f.position, required = f.required, allowableValues = f.allowableValues)
+      f.name -> ModelProperty(
+        `type` = f.`type`,
+        position = f.position,
+        required = f.required,
+        default = f.defaultValue
+      )
     }
     Model(cmd.commandName, cmd.commandName, None, cmd.commandDescription.blankOption, modelFields)
   }
