@@ -111,8 +111,10 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
         List(("$ref" -> s"#/definitions/${t.name}"))
       case t: ValueDataType =>
         List(("type" -> t.name), ("format" -> t.format))
+      case t: ContainerDataType if t.name.toLowerCase == "object" =>
+        List(("type" -> "object"), ("additionalProperties" -> t.typeArg.drop(1).headOption.map(generateDataType)))
       case t: ContainerDataType =>
-        List(("type" -> "array"), ("items" -> generateDataType(t.typeArg.get)))
+        List(("type" -> "array"), ("items" -> t.typeArg.headOption.map(generateDataType)))
     }
   }
 

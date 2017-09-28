@@ -185,13 +185,13 @@ object SwaggerSupportSyntax {
 
     def multiValued: this.type = {
       dataType match {
-        case dt: ValueDataType => dataType(ContainerDataType("List", Some(dt), uniqueItems = false))
+        case dt: ValueDataType => dataType(ContainerDataType("List", Seq(dt), uniqueItems = false))
         case _ => this
       }
     }
     def singleValued: this.type = {
       dataType match {
-        case ContainerDataType(_, Some(dataType), _) => this.dataType(dataType)
+        case ContainerDataType(_, Seq(dataType), _) => this.dataType(dataType)
         case _ => this
       }
     }

@@ -16,7 +16,7 @@ import org.scalatra.util.RicherString._
 object SwaggerSerializers {
   import org.scalatra.swagger.AllowableValues._
   private val simpleTypes =
-    Set("int32", "int64", "float", "double", "string", "byte", "boolean", "date", "date-time", "array")
+    Set("int32", "int64", "float", "double", "string", "byte", "boolean", "date", "date-time", "array", "object")
   private def isSimpleType(name: String) = simpleTypes contains name
 
   private def str(jv: JValue): Option[String] = jv.getAs[String].flatMap(_.blankOption)
@@ -170,14 +170,16 @@ object SwaggerSerializers {
       ("type" -> "boolean") ~ ("format" -> format)
     case DataType.ValueDataType("void", format, _) =>
       ("type" -> "void") ~ ("format" -> format)
-    case DataType.ContainerDataType("List" | "Array", Some(dt), _) =>
+    case DataType.ContainerDataType("List" | "Array", Seq(dt), _) =>
       ("type" -> "array") ~ ("items" -> writeDataType(dt, "$ref"))
     case DataType.ContainerDataType("List" | "Array", _, _) =>
       ("type" -> "array") ~ ("format" -> None)
-    case DataType.ContainerDataType("Set", Some(dt), _) =>
+    case DataType.ContainerDataType("Set", Seq(dt), _) =>
       ("type" -> "array") ~ ("items" -> writeDataType(dt, "$ref")) ~ ("uniqueItems" -> true)
     case DataType.ContainerDataType("Set", _, _) =>
       ("type" -> "array") ~ ("uniqueItems" -> true)
+    case DataType.ContainerDataType("Object", typeArgs, _) =>
+      ("type" -> "object") ~ ("additionalProperties" -> typeArgs.drop(1).headOption.map(writeDataType(_)))
     case DataType.ValueDataType(name, _, qualifiedName) =>
       (key -> name): JValue //~ ("qualifiedType" -> qualifiedName)
   }
@@ -197,6 +199,13 @@ object SwaggerSerializers {
           case _ =>
             items map (DataType.GenList(_)) getOrElse DataType.GenList()
         }
+      } else if (t == "object") {
+        val valueType = value \ "additionalProperties" match {
+          case JNothing => None
+          case jv => Some(readDataType(jv))
+        }
+        // In swagger 2.0, objects are assumed to have string keys
+        valueType map (DataType.GenMap(DataType.String, _)) getOrElse DataType.GenMap()
       } else {
         DataType((value \ "type").as[String], format = str(value \ "format"))
       }
