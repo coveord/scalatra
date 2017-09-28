@@ -44,13 +44,6 @@ public @interface ApiModelProperty {
     int position() default 0;
 
     /**
-     * allows relatively ordering the property based on another property. This property will be placed just after the given
-     * `positionedAfter`. If multiple properties are placed under a single one, their explicit `position` ordering will
-     * take precedence. Again, in case they have the same `position`, reflection will try to resolve their native order.
-     */
-    String positionedAfter() default "";
-
-    /**
      * Example value of the property. The format must be a valid json value strignyfied.
      */
     String example() default "";
