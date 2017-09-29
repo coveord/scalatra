@@ -44,12 +44,14 @@ public @interface ApiModelProperty {
     int position() default 0;
 
     /**
-     * Example value of the property. The format must be a valid json value strignyfied.
+     * Example value of the property. The format must be a valid string json value.
+     * This allows the swagger json output to represent virtually any type.
      */
     String example() default "";
 
     /**
-     * Default value of the property. The format must be a valid json value stringyfied.
+     * Default value of the property. The format must be a valid string json value.
+     * This allows the swagger json output to represent virtually any type.
      */
     String defaultValue() default "";
 }

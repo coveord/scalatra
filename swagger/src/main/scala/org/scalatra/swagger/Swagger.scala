@@ -85,20 +85,12 @@ object Swagger {
   import org.scalatra.util.RicherString._
   def modelToSwagger[T](implicit mf: Manifest[T]): Option[Model] = modelToSwagger(Reflector.scalaTypeOf[T])
 
-  private[this] def toModelProperty(
-    descr: ClassDescriptor,
-    position: Option[Int] = None,
-    required: Boolean = true,
-    description: Option[String] = None,
-    allowableValues: String = "",
-    example: Option[String] = None,
-    default: Option[String] = None
-  )(prop: PropertyDescriptor) = {
+  private[this] def toModelProperty(descr: ClassDescriptor, position: Option[Int] = None, required: Boolean = true, description: Option[String] = None, allowableValues: String = "", example: Option[String] = None, default: Option[String] = None)(prop: PropertyDescriptor) = {
     val ctorParam = if (!prop.returnType.isOption) descr.mostComprehensive.find(_.name == prop.name) else None
     //    if (descr.simpleName == "Pet") println("converting property: " + prop)
     val mp = ModelProperty(
-      `type` = DataType.fromScalaType(if (prop.returnType.isOption) prop.returnType.typeArgs.head else prop.returnType),
-      position = if (position.exists(_ >= 0)) position else ctorParam.map(_.argIndex),
+      DataType.fromScalaType(if (prop.returnType.isOption) prop.returnType.typeArgs.head else prop.returnType),
+      if (position.isDefined && position.forall(_ >= 0)) position else ctorParam.map(_.argIndex).orElse(position),
       required = required && !prop.returnType.isOption,
       description = description.flatMap(_.blankOption),
       allowableValues = convertToAllowableValues(allowableValues),
@@ -109,7 +101,6 @@ object Swagger {
     prop.name -> mp
   }
   def modelToSwagger(klass: ScalaType): Option[Model] = {
-
     if (Reflector.isPrimitive(klass.erasure) || Reflector.isExcluded(klass.erasure, excludes.toSeq)) None
     else {
       val name = klass.simpleName
@@ -120,15 +111,7 @@ object Swagger {
       val fields = klass.erasure.getDeclaredFields.toList collect {
         case f: Field if f.getAnnotation(classOf[ApiModelProperty]) != null =>
           val annot = f.getAnnotation(classOf[ApiModelProperty])
-          val asModelProperty = toModelProperty(
-            descr = descr,
-            position = Some(annot.position()),
-            required = annot.required(),
-            description = Option(annot.description()),
-            allowableValues = annot.allowableValues(),
-            example = Option(annot.example()),
-            default = Option(annot.defaultValue())
-          )_
+          val asModelProperty = toModelProperty(descr, Some(annot.position()), annot.required(), Option(annot.description()), annot.allowableValues(), Option(annot.example()), Option(annot.defaultValue()))_
           descr.properties.find(_.mangledName == f.getName) map asModelProperty
 
         case f: Field =>
@@ -136,8 +119,7 @@ object Swagger {
           descr.properties.find(_.mangledName == f.getName) map asModelProperty
 
       }
-      val a = Seq()
-      a.flatten
+
       val result = apiModel map { am =>
         Model(name, name, klass.fullName.blankOption, properties = fields.flatten, baseModel = am.parent.getName.blankOption, discriminator = am.discriminator.blankOption)
       } orElse Some(Model(name, name, klass.fullName.blankOption, properties = fields.flatten))

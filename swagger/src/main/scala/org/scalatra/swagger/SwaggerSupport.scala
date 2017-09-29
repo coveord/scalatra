@@ -202,21 +202,10 @@ object SwaggerSupportSyntax {
     //    def allowsMultiple: Boolean = !SwaggerSupportSyntax.SingleValued.contains(paramType) && _allowMultiple
 
     def result =
-      Parameter(
-        name = name,
-        `type` = dataType,
-        description = description,
-        notes = notes,
-        paramType = paramType,
-        defaultValue = defaultValue,
-        allowableValues = allowableValues,
-        required = isRequired,
-        position = _position
-      )
+      Parameter(name, dataType, description, notes, paramType, defaultValue, allowableValues, isRequired, None, _position)
   }
 
   class ParameterBuilder[T: Manifest](initialDataType: DataType) extends SwaggerParameterBuilder {
-
     dataType(initialDataType)
     private[this] var _defaultValue: Option[String] = None
     override def defaultValue = _defaultValue

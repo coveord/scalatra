@@ -38,6 +38,7 @@ object SwaggerCommandSupportSpec {
     get("/new", endpoint("new"), operation(newOperation)) { "OK" }
 
     protected def applicationDescription: String = "The command support servlet"
+
     override protected def applicationName: Option[String] = Some("support")
 
   }

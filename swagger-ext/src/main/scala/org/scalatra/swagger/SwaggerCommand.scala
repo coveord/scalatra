@@ -63,12 +63,7 @@ object SwaggerCommandSupport {
 
   private[this] def modelFromCommand[T <: Command](cmd: T, fields: List[Parameter]) = {
     val modelFields = fields map { f =>
-      f.name -> ModelProperty(
-        `type` = f.`type`,
-        position = f.position,
-        required = f.required,
-        default = f.defaultValue
-      )
+      f.name -> ModelProperty(f.`type`, f.position, required = f.required, default = f.defaultValue)
     }
     Model(cmd.commandName, cmd.commandName, None, cmd.commandDescription.blankOption, modelFields)
   }
