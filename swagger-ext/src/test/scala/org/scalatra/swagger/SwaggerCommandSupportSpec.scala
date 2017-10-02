@@ -58,14 +58,14 @@ class SwaggerCommandSupportSpec extends MutableScalatraSpec {
       model must beSome[Model]
       model.get.id must_== "SimpleCommand"
       model.get.description must beEmpty
-      model.get.properties must containTheSameElementsAs(List("age" -> ModelProperty(DataType.Int, required = false), "name" -> ModelProperty(DataType.String, Some(1), required = true)))
+      model.get.properties must containTheSameElementsAs(List("age" -> ModelProperty(DataType.Int, Some(0), required = false, default = Some("0")), "name" -> ModelProperty(DataType.String, Some(1), required = true)))
     }
 
     "generate a model and parameters for a full command" in {
       val parameterList = List(
         Parameter("body", DataType("FullCommand"), None, paramType = ParamType.Body),
-        Parameter("limit", DataType.Int, Some("the max number of items to return"), paramType = ParamType.Query, defaultValue = Some("20"), required = false),
-        Parameter("skip", DataType.Int, Some("The offset for this collection index"), paramType = ParamType.Query, defaultValue = Some("0"), required = false),
+        Parameter("limit", DataType.Int, Some("the max number of items to return"), paramType = ParamType.Query, defaultValue = Some("20"), required = false, position = Some(0)),
+        Parameter("skip", DataType.Int, Some("The offset for this collection index"), paramType = ParamType.Query, defaultValue = Some("0"), required = false, position = Some(0)),
         Parameter("API-TOKEN", DataType.String, Some("The API token for this request"), notes = Some("Invalid data kills kittens"), paramType = ParamType.Header, allowableValues = AllowableValues("123"))
       )
       val (parameters, model) = SwaggerCommandSupport.parametersFromCommand(new FullCommand)
@@ -78,7 +78,7 @@ class SwaggerCommandSupportSpec extends MutableScalatraSpec {
       model must beSome[Model]
       model.get.id must_== "FullCommand"
       model.get.description must beEmpty
-      model.get.properties must containTheSameElementsAs(List("age" -> ModelProperty(DataType.Int, required = false), "name" -> ModelProperty(DataType.String, Some(1), required = true)))
+      model.get.properties must containTheSameElementsAs(List("age" -> ModelProperty(DataType.Int, Some(0), required = false, default = Some("0")), "name" -> ModelProperty(DataType.String, Some(1), required = true)))
     }
   }
 
