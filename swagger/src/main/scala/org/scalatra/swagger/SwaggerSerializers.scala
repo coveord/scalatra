@@ -224,7 +224,15 @@ object SwaggerSerializers {
   }, {
     case AnyValue => JNothing
     case AllowableValuesList(values) => ("enum" -> Extraction.decompose(values)): JValue
-    case AllowableRangeValues(range) => ("minimum" -> range.start) ~ ("maximum" -> range.end)
+    case AllowableRangeValues(range) =>
+      Option(range.start)
+        .filter(_ != Int.MinValue)
+        .map(min => JObject(JField("minimum", min)))
+        .getOrElse(JObject()) ~
+        Option(range.end)
+        .filter(_ != Int.MaxValue)
+        .map(max => JObject(JField("maximum", max)))
+        .getOrElse(JObject())
   }))
 
   class ModelPropertySerializer extends CustomSerializer[ModelProperty](implicit formats => ({
