@@ -45,7 +45,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
   abstract override def initialize(config: ConfigT): Unit = {
     super.initialize(config)
     if (swagger.swaggerVersion.startsWith("2.")) {
-      get("/swagger.json") {
+      get("""/([^.]+)*(?:\.(\w+))?""".r) { // get("/swagger.json") { // We should keep using the last hosting location since the proxy isn't ready to switch yet
         renderSwagger2(swagger.docs.toList.asInstanceOf[List[ApiType]])
       }
     } else {

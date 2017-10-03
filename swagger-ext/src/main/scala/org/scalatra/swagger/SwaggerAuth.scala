@@ -157,7 +157,7 @@ trait SwaggerAuthBase[TypeForUser <: AnyRef] extends SwaggerBaseBase { self: Jso
     super.initialize(config)
 
     if (swagger.swaggerVersion.startsWith("2.")) {
-      get("/swagger.json") {
+      get("/:doc(.:format)") { // get("/swagger.json") { // We should keep using the last hosting location since the proxy isn't ready to switch yet
         val docs = filterDocs(swagger.docs)
         if (docs.isEmpty) halt(NotFound())
         renderSwagger2(docs.asInstanceOf[List[ApiType]])
