@@ -281,7 +281,7 @@ sealed trait DataType {
 object DataType {
 
   case class ValueDataType(name: String, format: Option[String] = None, qualifiedName: Option[String] = None) extends DataType
-  case class ContainerDataType(name: String, typeArg: Option[DataType] = None, uniqueItems: Boolean = false) extends DataType
+  case class ContainerDataType(name: String, typeArg: Seq[DataType] = Nil, uniqueItems: Boolean = false) extends DataType
 
   val Void = DataType("void")
   val String = DataType("string")
@@ -296,24 +296,24 @@ object DataType {
 
   object GenList {
     def apply(): DataType = ContainerDataType("List")
-    def apply(v: DataType): DataType = new ContainerDataType("List", Some(v))
+    def apply(v: DataType): DataType = new ContainerDataType("List", Seq(v))
   }
 
   object GenSet {
     def apply(): DataType = ContainerDataType("Set", uniqueItems = true)
-    def apply(v: DataType): DataType = new ContainerDataType("Set", Some(v), uniqueItems = true)
+    def apply(v: DataType): DataType = new ContainerDataType("Set", Seq(v), uniqueItems = true)
   }
 
   object GenArray {
     def apply(): DataType = ContainerDataType("Array")
-    def apply(v: DataType): DataType = new ContainerDataType("Array", Some(v))
+    def apply(v: DataType): DataType = new ContainerDataType("Array", Seq(v))
   }
 
-  //  object GenMap {
-  //    def apply(): DataType = Map
-  //    def apply(k: DataType, v: DataType): DataType = new DataType("Map[%s, %s]" format(k.name, v.name))
-  //  }
-  //
+  object GenMap {
+    def apply(): DataType = ContainerDataType("Object")
+    def apply(k: DataType, v: DataType): DataType = new ContainerDataType("Object", Seq(k, v))
+  }
+
   def apply(name: String, format: Option[String] = None, qualifiedName: Option[String] = None) =
     new ValueDataType(name, format, qualifiedName)
   def apply[T](implicit mf: Manifest[T]): DataType = fromManifest[T](mf)
@@ -340,13 +340,12 @@ object DataType {
     else if (isDateTime(klass)) this.DateTime
     else if (isBool(klass)) this.Boolean
     //    else if (classOf[java.lang.Enum[_]].isAssignableFrom(klass)) this.Enum
-    //    else if (isMap(klass)) {
-    //      if (st.typeArgs.size == 2) {
-    //        val (k :: v :: Nil) = st.typeArgs.toList
-    //        GenMap(fromScalaType(k), fromScalaType(v))
-    //      } else GenMap()
-    //    }
-    else if (classOf[scala.collection.Set[_]].isAssignableFrom(klass) || classOf[java.util.Set[_]].isAssignableFrom(klass)) {
+    else if (isMap(klass)) {
+      if (st.typeArgs.size == 2) {
+        val (k :: v :: Nil) = st.typeArgs.toList
+        GenMap(fromScalaType(k), fromScalaType(v))
+      } else GenMap()
+    } else if (classOf[scala.collection.Set[_]].isAssignableFrom(klass) || classOf[java.util.Set[_]].isAssignableFrom(klass)) {
       if (st.typeArgs.nonEmpty) GenSet(fromScalaType(st.typeArgs.head))
       else GenSet()
     } else if (classOf[collection.Seq[_]].isAssignableFrom(klass) || classOf[java.util.List[_]].isAssignableFrom(klass)) {
@@ -375,10 +374,9 @@ object DataType {
   private[this] val DateTimeTypes =
     Set[Class[_]](classOf[JDate], classOf[DateTime])
   private[this] def isDateTime(klass: Class[_]) = DateTimeTypes.exists(_.isAssignableFrom(klass))
-  //
-  //  private[this] def isMap(klass: Class[_]) =
-  //    classOf[collection.Map[_, _]].isAssignableFrom(klass) ||
-  //    classOf[java.util.Map[_, _]].isAssignableFrom(klass)
+  private[this] def isMap(klass: Class[_]) =
+    classOf[collection.Map[_, _]].isAssignableFrom(klass) ||
+      classOf[java.util.Map[_, _]].isAssignableFrom(klass)
 
   private[this] def isCollection(klass: Class[_]) =
     classOf[collection.Traversable[_]].isAssignableFrom(klass) ||
