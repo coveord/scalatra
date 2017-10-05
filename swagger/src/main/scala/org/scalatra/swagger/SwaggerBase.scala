@@ -188,10 +188,14 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                     val beyondMaxPosition = if (model.properties.nonEmpty) model.properties.map(_._2.position.getOrElse(0)).max + 1 else 0
                     name ->
                       ("properties" -> model.properties.sortBy(_._2.position.getOrElse(beyondMaxPosition)).map {
-                        case (propName, property) =>
-                          propName -> JObject(generateDataType(property.`type`)) ~
+                        case (name, property) =>
+                          name -> JObject(generateDataType(property.`type`)) ~
                             ("default" -> property.default) ~
-                            ("example" -> property.example)
+                            ("example" -> property.example) ~
+                            (Extraction.decompose(property.allowableValues) match {
+                              case jObject: JObject => jObject
+                              case _ => JObject()
+                            })
                       }.toMap)
                 }
               }.toMap) ~

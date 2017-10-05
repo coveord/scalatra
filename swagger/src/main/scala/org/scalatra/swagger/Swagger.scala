@@ -170,7 +170,7 @@ object Swagger {
       max = ranges(1).toFloat
     }
     val allowableValues =
-      AllowableValues.AllowableRangeValues(if (inclusive) Range.inclusive(min.toInt, max.toInt) else Range(min.toInt, max.toInt))
+      AllowableValues.AllowableRangeValues(if (inclusive) Range.inclusive(min.toInt, max.toInt, max.toInt - min.toInt) else Range(min.toInt, max.toInt, max.toInt - min.toInt))
     allowableValues
   }
 
