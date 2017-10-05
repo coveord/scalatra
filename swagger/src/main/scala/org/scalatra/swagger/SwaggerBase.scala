@@ -3,8 +3,10 @@ package swagger
 
 import org.json4s.JsonDSL._
 import org.json4s._
+import org.json4s.jackson.Serialization
 import org.scalatra.json.JsonSupport
 import org.scalatra.swagger.DataType.{ ContainerDataType, ValueDataType }
+import org.scalatra.swagger.SwaggerSerializers.SwaggerFormats
 
 /**
  * Trait that serves the resource and operation listings, as specified by the Swagger specification.
@@ -188,7 +190,12 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                     (name ->
                       ("properties" -> model.properties.map {
                         case (name, property) =>
-                          (name -> generateDataType(property.`type`))
+                          (name ->
+                            JObject(generateDataType(property.`type`)) ~
+                            (Extraction.decompose(property.allowableValues) match {
+                              case jObject: JObject => jObject
+                              case _ => JObject()
+                            }))
                       }.toMap))
                 }
               }.toMap) ~
