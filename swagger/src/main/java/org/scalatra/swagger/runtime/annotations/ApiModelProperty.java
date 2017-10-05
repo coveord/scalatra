@@ -48,4 +48,16 @@ public @interface ApiModelProperty {
     * ordering, you should specify property order to keep models consistent across different VM implementations and versions.
     */
     int position() default 0;
+
+    /**
+     * Example value of the property. The format must be a valid string json value.
+     * This allows the swagger json output to represent virtually any type.
+     */
+    String example() default "";
+
+    /**
+     * Default value of the property. The format must be a valid string json value.
+     * This allows the swagger json output to represent virtually any type.
+     */
+    String defaultValue() default "";
 }
