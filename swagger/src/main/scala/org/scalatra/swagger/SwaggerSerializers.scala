@@ -9,6 +9,7 @@ import org.joda.time.{ DateTime, DateTimeZone }
 import org.json4s.DefaultReaders._
 import org.json4s.JsonDSL._
 import org.json4s._
+import org.json4s.jackson.JsonMethods._
 import org.json4s.ext.{ EnumNameSerializer, JodaTimeSerializers }
 import org.scalatra.HttpMethod
 import org.scalatra.util.RicherString._
@@ -233,14 +234,22 @@ object SwaggerSerializers {
   }, {
     case AnyValue => JNothing
     case AllowableValuesList(values) => ("enum" -> Extraction.decompose(values)): JValue
-    case AllowableRangeValues(range) => ("minimum" -> range.start) ~ ("maximum" -> range.end)
+    case AllowableRangeValues(range) =>
+      Option(range.start)
+        .filter(_ != Int.MinValue)
+        .map(min => JObject(JField("minimum", min)))
+        .getOrElse(JObject()) ~
+        Option(range.end)
+        .filter(_ != Int.MaxValue)
+        .map(max => JObject(JField("maximum", max)))
+        .getOrElse(JObject())
   }))
 
   class ModelPropertySerializer extends CustomSerializer[ModelProperty](implicit formats => ({
     case json: JObject =>
       ModelProperty(
         `type` = readDataType(json),
-        position = (json \ "position").getAsOrElse(0),
+        position = (json \ "position").getAs[Int],
         json \ "required" match {
           case JString(s) => s.toCheckboxBool
           case JBool(value) => value
@@ -248,7 +257,15 @@ object SwaggerSerializers {
         },
         description = (json \ "description").getAs[String].flatMap(_.blankOption),
         allowableValues = json.extract[AllowableValues],
-        items = None
+        items = None,
+        example = Option(json \ "example").flatMap {
+          case JNothing => None
+          case jValue => Some(compact(jValue))
+        },
+        default = Option(json \ "default").flatMap {
+          case JNothing => None
+          case jValue => Some(compact(jValue))
+        }
       )
   }, {
     case x: ModelProperty =>

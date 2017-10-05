@@ -16,6 +16,12 @@ public @interface ApiModelProperty {
     * If the values that can be set are restricted, they can be set here. In the form of a comma separated list
     * <code>registered, active, closed</code>.
     *
+    * The values can also be numerically restricted by a range. They must be no spaces in the range definition.
+    * <code>range[1,2]</code> for an inclusive range and <code>rangeexclusive[4,10]</code>
+    *
+    * To restrict only one of the bounds, the range can be set to infinity and -infinity.
+    * <code>range[-infinity,8]</code>
+    *
     * @return the allowable values
     */
     String allowableValues() default "";
@@ -42,4 +48,16 @@ public @interface ApiModelProperty {
     * ordering, you should specify property order to keep models consistent across different VM implementations and versions.
     */
     int position() default 0;
+
+    /**
+     * Example value of the property. The format must be a valid string json value.
+     * This allows the swagger json output to represent virtually any type.
+     */
+    String example() default "";
+
+    /**
+     * Default value of the property. The format must be a valid string json value.
+     * This allows the swagger json output to represent virtually any type.
+     */
+    String defaultValue() default "";
 }
