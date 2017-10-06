@@ -198,8 +198,9 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                             (Extraction.decompose(property.allowableValues) match {
                               case jObject: JObject => jObject
                               case _ => JObject()
-                            })
-                      }.toMap)
+                            }) ~
+                            ("description" -> property.description)
+                      })
                 }
               }.toMap) ~
               ("securityDefinitions" -> (swagger.authorizations.flatMap { auth =>
