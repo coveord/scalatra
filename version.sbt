@@ -1,1 +1,1 @@
-version in ThisBuild := "2.5.1.5-coveo"
+version in ThisBuild := "2.5.1.6-coveo"
