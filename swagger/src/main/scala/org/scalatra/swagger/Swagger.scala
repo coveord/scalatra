@@ -3,15 +3,17 @@ package swagger
 
 import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
-import java.util.{ Date => JDate }
+import java.util.{Date => JDate}
 
 import grizzled.slf4j.Logger
 import org.joda.time._
 import org.json4s._
 import org.scalatra.swagger.reflect._
-import org.scalatra.swagger.runtime.annotations.{ ApiModel, ApiModelProperty }
+import org.scalatra.swagger.runtime.annotations.{ApiModel, ApiModelProperty}
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 trait SwaggerEngine[T <: SwaggerApi[_]] {
   def swaggerVersion: String
@@ -109,8 +111,8 @@ object Swagger {
       val apiModel = Option(klass.erasure.getAnnotation(classOf[ApiModel]))
 
       val fields = klass.erasure.getDeclaredFields.toList collect {
-        case f: Field if f.getAnnotation(classOf[ApiModelProperty]) != null =>
-          val annot = f.getAnnotation(classOf[ApiModelProperty])
+        case f: Field if getRecursiveAnnotation(klass.erasure, f.getName, classOf[ApiModelProperty]).isDefined =>
+          val annot = getRecursiveAnnotation(klass.erasure, f.getName, classOf[ApiModelProperty]).get
           val position = if (annot.position() != Integer.MAX_VALUE) Some(annot.position()) else None
           val asModelProperty = toModelProperty(descr, position, annot.required(), Option(annot.description()), annot.allowableValues(), Option(annot.example()), Option(annot.defaultValue()))_
           descr.properties.find(_.mangledName == f.getName) map asModelProperty
@@ -127,6 +129,16 @@ object Swagger {
       //      if (descr.simpleName == "Pet") println("The collected fields:\n" + result)
       result
     }
+  }
+
+  private[this] def getRecursiveAnnotation[A <: java.lang.annotation.Annotation](klass: Class[_], fieldName: String, annotationClass: Class[A]): Option[A] = {
+    klass.getDeclaredFields.find(_.getName == fieldName).flatMap(field =>
+      Option(field.getAnnotation(annotationClass)).orElse(
+        getRecursiveAnnotation(klass.getSuperclass, fieldName, annotationClass)
+      ).orElse(
+        klass.getInterfaces.toStream.map(getRecursiveAnnotation(_, fieldName, annotationClass)).collectFirst { case Some(a) => a }
+      )
+    )
   }
 
   private def convertToAllowableValues(csvString: String, paramType: String = null): AllowableValues = {
