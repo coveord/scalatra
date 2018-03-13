@@ -171,11 +171,11 @@ object SwaggerSerializers {
       ("type" -> "boolean") ~ ("format" -> format)
     case DataType.ValueDataType("void", format, _) =>
       ("type" -> "void") ~ ("format" -> format)
-    case DataType.ContainerDataType("List" | "Array", Seq(dt), _) =>
+    case DataType.ContainerDataType("List" | "Array", Some(dt), _) =>
       ("type" -> "array") ~ ("items" -> writeDataType(dt, "$ref"))
     case DataType.ContainerDataType("List" | "Array", _, _) =>
       ("type" -> "array") ~ ("format" -> None)
-    case DataType.ContainerDataType("Set", Seq(dt), _) =>
+    case DataType.ContainerDataType("Set", Some(dt), _) =>
       ("type" -> "array") ~ ("items" -> writeDataType(dt, "$ref")) ~ ("uniqueItems" -> true)
     case DataType.ContainerDataType("Set", _, _) =>
       ("type" -> "array") ~ ("uniqueItems" -> true)
@@ -208,7 +208,7 @@ object SwaggerSerializers {
           case jv => Some(readDataType(jv))
         }
         // In swagger 2.0, objects are assumed to have string keys
-        valueType map (DataType.GenMap(DataType.String, _)) getOrElse DataType.GenMap()
+        valueType map (DataType.GenMap.apply) getOrElse DataType.GenMap()
       } else {
         DataType((value \ "type").as[String], format = str(value \ "format"))
       }
@@ -251,7 +251,7 @@ object SwaggerSerializers {
     case json: JObject =>
       ModelProperty(
         `type` = readDataType(json),
-        position = (json \ "position").getAs[Int],
+        position = (json \ "position").getAsOrElse(0),
         json \ "required" match {
           case JString(s) => s.toCheckboxBool
           case JBool(value) => value

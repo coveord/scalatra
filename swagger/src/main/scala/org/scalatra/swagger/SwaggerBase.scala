@@ -3,7 +3,6 @@ package swagger
 
 import org.json4s.JsonDSL._
 import org.json4s._
-import org.json4s.jackson.JsonMethods._
 import org.scalatra.json.JsonSupport
 import org.scalatra.swagger.DataType.{ ContainerDataType, ValueDataType }
 
@@ -115,7 +114,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
       case t: ContainerDataType if t.name == "Map" =>
         List(("type" -> "object"), ("additionalProperties" -> generateDataType(t.typeArg.get)))
       case t: ContainerDataType =>
-        List(("type" -> "array"), ("items" -> t.typeArg.headOption.map(generateDataType)))
+        List(("type" -> "array"), ("items" -> generateDataType(t.typeArg.get)))
     }
   }
 
@@ -195,9 +194,8 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
               ("definitions" -> docs.flatMap { doc =>
                 doc.models.map {
                   case (name, model) =>
-                    val beyondMaxPosition = if (model.properties.nonEmpty) model.properties.map(_._2.position.getOrElse(0)).max + 1 else 0
                     name ->
-                      ("properties" -> model.properties.sortBy(_._2.position.getOrElse(beyondMaxPosition)).map {
+                      ("properties" -> model.properties.sortBy(_._2.position).map {
                         case (name, property) =>
                           name -> JObject(generateDataType(property.`type`)) ~
                             ("default" -> property.default.map(parse(_))) ~

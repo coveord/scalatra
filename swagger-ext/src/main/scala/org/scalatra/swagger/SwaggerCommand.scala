@@ -37,7 +37,7 @@ object SwaggerCommandSupport {
             if (f.isRequired) None else f.defaultValue.flatMap(_.toString.blankOption),
             if (f.allowableValues.nonEmpty) AllowableValues(f.allowableValues) else AllowableValues.AnyValue,
             required = f.isRequired,
-            position = Some(f.position)
+            position = f.position
           ) :: lst
         }
       } else lst

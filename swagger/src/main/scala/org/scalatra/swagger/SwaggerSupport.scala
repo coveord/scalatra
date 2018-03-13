@@ -143,7 +143,7 @@ object SwaggerSupportSyntax {
     protected[this] var _required: Option[Boolean] = None
     //    private[this] var _allowMultiple: Boolean = false
     private[this] var _paramAccess: Option[String] = None
-    private[this] var _position: Option[Int] = None
+    private[this] var _position: Int = 0
 
     def dataType: DataType = _dataType
     def dataType(dataType: DataType): this.type = { _dataType = dataType; this }
@@ -151,7 +151,7 @@ object SwaggerSupportSyntax {
     def description(description: String): this.type = { _description = description.blankOption; this }
     def description(description: Option[String]): this.type = { _description = description.flatMap(_.blankOption); this }
 
-    def position(position: Int): this.type = { _position = Some(position); this }
+    def position(position: Int): this.type = { _position = position; this }
 
     def notes(notes: String): this.type = { _notes = notes.blankOption; this }
     def paramType(name: ParamType.ParamType): this.type = { _paramType = name; this }
@@ -188,13 +188,13 @@ object SwaggerSupportSyntax {
 
     def multiValued: this.type = {
       dataType match {
-        case dt: ValueDataType => dataType(ContainerDataType("List", Seq(dt), uniqueItems = false))
+        case dt: ValueDataType => dataType(ContainerDataType("List", Some(dt), uniqueItems = false))
         case _ => this
       }
     }
     def singleValued: this.type = {
       dataType match {
-        case ContainerDataType(_, Seq(dataType), _) => this.dataType(dataType)
+        case ContainerDataType(_, Some(dataType), _) => this.dataType(dataType)
         case _ => this
       }
     }

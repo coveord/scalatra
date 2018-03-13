@@ -97,7 +97,7 @@ object Swagger {
     //    if (descr.simpleName == "Pet") println("converting property: " + prop)
     val mp = ModelProperty(
       DataType.fromScalaType(if (prop.returnType.isOption) prop.returnType.typeArgs.head else prop.returnType),
-      if (position.isDefined && position.forall(_ >= 0)) position else ctorParam.map(_.argIndex).orElse(position),
+      if (position.isDefined && position.forall(_ >= 0)) position.get else ctorParam.map(_.argIndex).getOrElse(position.getOrElse(0)),
       required = required && !prop.returnType.isOption,
       description = description.flatMap(_.blankOption),
       allowableValues = convertToAllowableValues(allowableValues),
@@ -178,7 +178,7 @@ object Swagger {
       max = ranges(1).toFloat
     }
     val allowableValues =
-      AllowableValues.AllowableRangeValues(if (inclusive) Range.inclusive(min.toInt, max.toInt, max.toInt - min.toInt) else Range(min.toInt, max.toInt, max.toInt - min.toInt))
+      AllowableValues.AllowableRangeValues(if (inclusive) Range.inclusive(min.toInt, max.toInt) else Range(min.toInt, max.toInt))
     allowableValues
   }
 
@@ -289,7 +289,7 @@ sealed trait DataType {
 object DataType {
 
   case class ValueDataType(name: String, format: Option[String] = None, qualifiedName: Option[String] = None) extends DataType
-  case class ContainerDataType(name: String, typeArg: Seq[DataType] = Nil, uniqueItems: Boolean = false) extends DataType
+  case class ContainerDataType(name: String, typeArg: Option[DataType] = None, uniqueItems: Boolean = false) extends DataType
 
   val Void = DataType("void")
   val String = DataType("string")
@@ -304,17 +304,17 @@ object DataType {
 
   object GenList {
     def apply(): DataType = ContainerDataType("List")
-    def apply(v: DataType): DataType = new ContainerDataType("List", Seq(v))
+    def apply(v: DataType): DataType = new ContainerDataType("List", Some(v))
   }
 
   object GenSet {
     def apply(): DataType = ContainerDataType("Set", uniqueItems = true)
-    def apply(v: DataType): DataType = new ContainerDataType("Set", Seq(v), uniqueItems = true)
+    def apply(v: DataType): DataType = new ContainerDataType("Set", Some(v), uniqueItems = true)
   }
 
   object GenArray {
     def apply(): DataType = ContainerDataType("Array")
-    def apply(v: DataType): DataType = new ContainerDataType("Array", Seq(v))
+    def apply(v: DataType): DataType = new ContainerDataType("Array", Some(v))
   }
 
   object GenMap {
@@ -348,12 +348,13 @@ object DataType {
     else if (isDateTime(klass)) this.DateTime
     else if (isBool(klass)) this.Boolean
     //    else if (classOf[java.lang.Enum[_]].isAssignableFrom(klass)) this.Enum
-    else if (isMap(klass)) {
-      if (st.typeArgs.size == 2) {
-        val (k :: v :: Nil) = st.typeArgs.toList
-        GenMap(fromScalaType(k), fromScalaType(v))
-      } else GenMap()
-    } else if (classOf[scala.collection.Set[_]].isAssignableFrom(klass) || classOf[java.util.Set[_]].isAssignableFrom(klass)) {
+    //    else if (isMap(klass)) {
+    //      if (st.typeArgs.size == 2) {
+    //        val (k :: v :: Nil) = st.typeArgs.toList
+    //        GenMap(fromScalaType(k), fromScalaType(v))
+    //      } else GenMap()
+    //    }
+    else if (classOf[scala.collection.Set[_]].isAssignableFrom(klass) || classOf[java.util.Set[_]].isAssignableFrom(klass)) {
       if (st.typeArgs.nonEmpty) GenSet(fromScalaType(st.typeArgs.head))
       else GenSet()
     } else if (classOf[collection.Seq[_]].isAssignableFrom(klass) || classOf[java.util.List[_]].isAssignableFrom(klass)) {
@@ -429,16 +430,16 @@ case class Parameter(
   required: Boolean = true,
   //                     allowMultiple: Boolean = false,
   paramAccess: Option[String] = None,
-  position: Option[Int] = None
+  position: Int = 0
 )
 
 case class ModelProperty(
   `type`: DataType,
-  position: Option[Int] = None,
+  position: Int = 0,
   required: Boolean = false,
   description: Option[String] = None,
   allowableValues: AllowableValues = AllowableValues.AnyValue,
-  items: Option[Model] = None,
+  items: Option[ModelRef] = None,
   example: Option[String] = None,
   default: Option[String] = None
 )
