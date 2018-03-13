@@ -143,12 +143,15 @@ object SwaggerSupportSyntax {
     protected[this] var _required: Option[Boolean] = None
     //    private[this] var _allowMultiple: Boolean = false
     private[this] var _paramAccess: Option[String] = None
+    private[this] var _position: Option[Int] = None
 
     def dataType: DataType = _dataType
     def dataType(dataType: DataType): this.type = { _dataType = dataType; this }
     def name(name: String): this.type = { _name = name; this }
     def description(description: String): this.type = { _description = description.blankOption; this }
     def description(description: Option[String]): this.type = { _description = description.flatMap(_.blankOption); this }
+
+    def position(position: Int): this.type = { _position = Some(position); this }
 
     def notes(notes: String): this.type = { _notes = notes.blankOption; this }
     def paramType(name: ParamType.ParamType): this.type = { _paramType = name; this }
@@ -185,13 +188,13 @@ object SwaggerSupportSyntax {
 
     def multiValued: this.type = {
       dataType match {
-        case dt: ValueDataType => dataType(ContainerDataType("List", Some(dt), uniqueItems = false))
+        case dt: ValueDataType => dataType(ContainerDataType("List", Seq(dt), uniqueItems = false))
         case _ => this
       }
     }
     def singleValued: this.type = {
       dataType match {
-        case ContainerDataType(_, Some(dataType), _) => this.dataType(dataType)
+        case ContainerDataType(_, Seq(dataType), _) => this.dataType(dataType)
         case _ => this
       }
     }
@@ -199,7 +202,7 @@ object SwaggerSupportSyntax {
     //    def allowsMultiple: Boolean = !SwaggerSupportSyntax.SingleValued.contains(paramType) && _allowMultiple
 
     def result =
-      Parameter(name, dataType, description, notes, paramType, defaultValue, allowableValues, isRequired)
+      Parameter(name, dataType, description, notes, paramType, defaultValue, allowableValues, isRequired, None, _position)
   }
 
   class ParameterBuilder[T: Manifest](initialDataType: DataType) extends SwaggerParameterBuilder {
@@ -527,6 +530,8 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
     }
   }
 
+  protected def swaggerTag: Option[String] = None
+
 }
 
 /**
@@ -539,13 +544,17 @@ trait SwaggerSupport extends ScalatraBase with SwaggerSupportBase with SwaggerSu
   protected implicit def operationBuilder2operation[T](bldr: SwaggerOperationBuilder[Operation]): Operation = bldr.result
   protected def apiOperation[T: Manifest: NotNothing](nickname: String): OperationBuilder = {
     registerModel[T]()
-    (new OperationBuilder(DataType[T])
-      nickname nickname)
+    makeOperationBuilder(nickname, DataType[T])
   }
   protected def apiOperation(nickname: String, model: Model): OperationBuilder = {
     registerModel(model)
-    (new OperationBuilder(ValueDataType(model.id))
-      nickname nickname)
+    makeOperationBuilder(nickname, ValueDataType(model.id))
+  }
+
+  private def makeOperationBuilder(nickname: String, dataType: DataType): OperationBuilder = {
+    val builder = new OperationBuilder(dataType).nickname(nickname)
+    swaggerTag.foreach(builder.tags(_))
+    builder
   }
 
   /**

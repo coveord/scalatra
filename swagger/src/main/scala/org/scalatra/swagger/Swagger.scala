@@ -92,15 +92,17 @@ object Swagger {
   import org.scalatra.util.RicherString._
   def modelToSwagger[T](implicit mf: Manifest[T]): Option[Model] = modelToSwagger(Reflector.scalaTypeOf[T])
 
-  private[this] def toModelProperty(descr: ClassDescriptor, position: Option[Int] = None, required: Boolean = true, description: Option[String] = None, allowableValues: String = "")(prop: PropertyDescriptor) = {
+  private[this] def toModelProperty(descr: ClassDescriptor, position: Option[Int] = None, required: Boolean = true, description: Option[String] = None, allowableValues: String = "", example: Option[String] = None, default: Option[String] = None)(prop: PropertyDescriptor) = {
     val ctorParam = if (!prop.returnType.isOption) descr.mostComprehensive.find(_.name == prop.name) else None
     //    if (descr.simpleName == "Pet") println("converting property: " + prop)
     val mp = ModelProperty(
       DataType.fromScalaType(if (prop.returnType.isOption) prop.returnType.typeArgs.head else prop.returnType),
-      if (position.isDefined && position.forall(_ >= 0)) position.get else ctorParam.map(_.argIndex).getOrElse(position.getOrElse(0)),
+      if (position.isDefined && position.forall(_ >= 0)) position else ctorParam.map(_.argIndex).orElse(position),
       required = required && !prop.returnType.isOption,
       description = description.flatMap(_.blankOption),
-      allowableValues = convertToAllowableValues(allowableValues)
+      allowableValues = convertToAllowableValues(allowableValues),
+      example = example.flatMap(_.blankOption),
+      default = default.flatMap(_.blankOption)
     )
     //    if (descr.simpleName == "Pet") println("The property is: " + mp)
     prop.name -> mp
@@ -116,7 +118,8 @@ object Swagger {
       val fields = klass.erasure.getDeclaredFields.toList collect {
         case f: Field if f.getAnnotation(classOf[ApiModelProperty]) != null =>
           val annot = f.getAnnotation(classOf[ApiModelProperty])
-          val asModelProperty = toModelProperty(descr, Some(annot.position()), annot.required(), annot.description().blankOption, annot.allowableValues())_
+          val position = if (annot.position() != Integer.MAX_VALUE) Some(annot.position()) else None
+          val asModelProperty = toModelProperty(descr, position, annot.required(), Option(annot.description()), annot.allowableValues(), Option(annot.example()), Option(annot.defaultValue()))_
           descr.properties.find(_.mangledName == f.getName) map asModelProperty
 
         case f: Field =>
@@ -175,7 +178,7 @@ object Swagger {
       max = ranges(1).toFloat
     }
     val allowableValues =
-      AllowableValues.AllowableRangeValues(if (inclusive) Range.inclusive(min.toInt, max.toInt) else Range(min.toInt, max.toInt))
+      AllowableValues.AllowableRangeValues(if (inclusive) Range.inclusive(min.toInt, max.toInt, max.toInt - min.toInt) else Range(min.toInt, max.toInt, max.toInt - min.toInt))
     allowableValues
   }
 
@@ -286,7 +289,7 @@ sealed trait DataType {
 object DataType {
 
   case class ValueDataType(name: String, format: Option[String] = None, qualifiedName: Option[String] = None) extends DataType
-  case class ContainerDataType(name: String, typeArg: Option[DataType] = None, uniqueItems: Boolean = false) extends DataType
+  case class ContainerDataType(name: String, typeArg: Seq[DataType] = Nil, uniqueItems: Boolean = false) extends DataType
 
   val Void = DataType("void")
   val String = DataType("string")
@@ -301,17 +304,17 @@ object DataType {
 
   object GenList {
     def apply(): DataType = ContainerDataType("List")
-    def apply(v: DataType): DataType = new ContainerDataType("List", Some(v))
+    def apply(v: DataType): DataType = new ContainerDataType("List", Seq(v))
   }
 
   object GenSet {
     def apply(): DataType = ContainerDataType("Set", uniqueItems = true)
-    def apply(v: DataType): DataType = new ContainerDataType("Set", Some(v), uniqueItems = true)
+    def apply(v: DataType): DataType = new ContainerDataType("Set", Seq(v), uniqueItems = true)
   }
 
   object GenArray {
     def apply(): DataType = ContainerDataType("Array")
-    def apply(v: DataType): DataType = new ContainerDataType("Array", Some(v))
+    def apply(v: DataType): DataType = new ContainerDataType("Array", Seq(v))
   }
 
   object GenMap {
@@ -345,13 +348,12 @@ object DataType {
     else if (isDateTime(klass)) this.DateTime
     else if (isBool(klass)) this.Boolean
     //    else if (classOf[java.lang.Enum[_]].isAssignableFrom(klass)) this.Enum
-    //    else if (isMap(klass)) {
-    //      if (st.typeArgs.size == 2) {
-    //        val (k :: v :: Nil) = st.typeArgs.toList
-    //        GenMap(fromScalaType(k), fromScalaType(v))
-    //      } else GenMap()
-    //    }
-    else if (classOf[scala.collection.Set[_]].isAssignableFrom(klass) || classOf[java.util.Set[_]].isAssignableFrom(klass)) {
+    else if (isMap(klass)) {
+      if (st.typeArgs.size == 2) {
+        val (k :: v :: Nil) = st.typeArgs.toList
+        GenMap(fromScalaType(k), fromScalaType(v))
+      } else GenMap()
+    } else if (classOf[scala.collection.Set[_]].isAssignableFrom(klass) || classOf[java.util.Set[_]].isAssignableFrom(klass)) {
       if (st.typeArgs.nonEmpty) GenSet(fromScalaType(st.typeArgs.head))
       else GenSet()
     } else if (classOf[collection.Seq[_]].isAssignableFrom(klass) || classOf[java.util.List[_]].isAssignableFrom(klass)) {
@@ -383,10 +385,9 @@ object DataType {
   private[this] val DateTimeTypes =
     Set[Class[_]](classOf[JDate], classOf[DateTime])
   private[this] def isDateTime(klass: Class[_]) = DateTimeTypes.exists(_.isAssignableFrom(klass))
-  //
-  //  private[this] def isMap(klass: Class[_]) =
-  //    classOf[collection.Map[_, _]].isAssignableFrom(klass) ||
-  //    classOf[java.util.Map[_, _]].isAssignableFrom(klass)
+  private[this] def isMap(klass: Class[_]) =
+    classOf[collection.Map[_, _]].isAssignableFrom(klass) ||
+      classOf[java.util.Map[_, _]].isAssignableFrom(klass)
 
   private[this] def isCollection(klass: Class[_]) =
     classOf[collection.Traversable[_]].isAssignableFrom(klass) ||
@@ -428,16 +429,18 @@ case class Parameter(
   required: Boolean = true,
   //                     allowMultiple: Boolean = false,
   paramAccess: Option[String] = None,
-  position: Int = 0
+  position: Option[Int] = None
 )
 
 case class ModelProperty(
   `type`: DataType,
-  position: Int = 0,
+  position: Option[Int] = None,
   required: Boolean = false,
   description: Option[String] = None,
   allowableValues: AllowableValues = AllowableValues.AnyValue,
-  items: Option[ModelRef] = None
+  items: Option[Model] = None,
+  example: Option[String] = None,
+  default: Option[String] = None
 )
 
 case class Model(
