@@ -21,7 +21,12 @@ lazy val scalatraSettings = Seq(
     "org.scala-lang" %  "scala-library"  % scalaVersion.value,
     "org.scala-lang" %  "scala-reflect"  % scalaVersion.value,
     "org.scala-lang" %  "scala-compiler" % scalaVersion.value
-  )
+  ),
+  publishTo := {
+    if (version.value.trim.endsWith("SNAPSHOT")) Some("Coveo Maven Repo" at "https://maven.cloud.coveo.com/artifactory/libs-snapshot-local")
+    else Some("Coveo Maven Repo" at "https://maven.cloud.coveo.com/artifactory/libs-release-local")
+  },
+  credentials += Credentials(Path.userHome / ".ivy2" / "credentials")
 ) ++ mavenCentralFrouFrou ++ Seq(Compile, Test).flatMap(c =>
   scalacOptions in (c, console) --= Seq("-Ywarn-unused-import")
 )
