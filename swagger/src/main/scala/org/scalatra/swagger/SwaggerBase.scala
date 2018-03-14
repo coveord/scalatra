@@ -207,7 +207,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                       ("type" -> "object") ~
                       ("description" -> model.description) ~
                       ("discriminator" -> model.discriminator) ~
-                      ("properties" -> model.properties.sortBy(_._2.position)..map {
+                      ("properties" -> model.properties.sortBy(_._2.position).map {
                         case (name, property) =>
                           (name ->
                             ("default" -> property.default.map(parse(_))) ~
