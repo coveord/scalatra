@@ -34,8 +34,7 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
     termsOfServiceUrl = "http://helloreverb.com/terms/",
     contact = "apiteam@wordnik.com",
     license = "Apache 2.0",
-    licenseUrl = "http://www.apache.org/licenses/LICENSE-2.0.html"
-  )
+    licenseUrl = "http://www.apache.org/licenses/LICENSE-2.0.html")
   val swagger = new Swagger("1.2", "1.0.0", apiInfo)
   swagger.addAuthorization(ApiKey("apiKey"))
   swagger.addAuthorization(ApiKey("Authorization1", "query"))
@@ -45,21 +44,15 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
       ImplicitGrant(LoginEndpoint("http://localhost:8002/oauth/dialog"), "access_code"),
       AuthorizationCodeGrant(
         TokenRequestEndpoint("http://localhost:8002/oauth/requestToken", "client_id", "client_secret"),
-        TokenEndpoint("http://localhost:8002/oauth/token", "access_code")
-      )
-    )
-  ))
+        TokenEndpoint("http://localhost:8002/oauth/token", "access_code")))))
   swagger.addAuthorization(OAuth(
     List("PUBLIC"),
     List(
       ImplicitGrant(LoginEndpoint("http://localhost:8002/oauth/dialog"), "access_code"),
       AuthorizationCodeGrant(
         TokenRequestEndpoint("http://localhost:8002/oauth/requestToken", "client_id", "client_secret"),
-        TokenEndpoint("http://localhost:8002/oauth/token", "access_code")
-      )
-    ),
-    "AuthorizationN"
-  ))
+        TokenEndpoint("http://localhost:8002/oauth/token", "access_code"))),
+    "AuthorizationN"))
   val testServlet = new SwaggerTestServlet(swagger)
 
   addServlet(testServlet, "/pet/*")
@@ -253,8 +246,7 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
             val mm = verifyFields(
               v,
               ef find (_ \ "code" == v \ "code") getOrElse JNothing,
-              "code", "message", "responseModel"
-            )
+              "code", "message", "responseModel")
             mm setMessage (mm.message + " in response messages collection")
           }
           def countsmatch = (af.size must_== ef.size).setMessage("The count for the responseMessages is different")
@@ -266,8 +258,7 @@ class SwaggerSpec extends ScalatraSpec with JsonMatchers {
             val mm = verifyFields(
               v,
               ef find (_ \ "name" == v \ "name") get,
-              "allowableValues", "type", "$ref", "items", "paramType", "defaultValue", "description", "name", "required", "paramAccess"
-            )
+              "allowableValues", "type", "$ref", "items", "paramType", "defaultValue", "description", "name", "required", "paramAccess")
             mm setMessage (mm.message + " in parameter " + (v \ "name").extractOrElse("N/A"))
           }
 
@@ -306,8 +297,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
     termsOfServiceUrl = "http://helloreverb.com/terms/",
     contact = "apiteam@wordnik.com",
     license = "Apache 2.0",
-    licenseUrl = "http://www.apache.org/licenses/LICENSE-2.0.html"
-  )
+    licenseUrl = "http://www.apache.org/licenses/LICENSE-2.0.html")
   val swagger = new Swagger("2.0", "1.0.0", apiInfo)
   swagger.addAuthorization(ApiKey("apiKey"))
   swagger.addAuthorization(ApiKey("Authorization1", "query", "you must register your app to receive an apikey"))
@@ -317,23 +307,17 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
       ImplicitGrant(LoginEndpoint("http://localhost:8002/oauth/dialog"), "access_code"),
       AuthorizationCodeGrant(
         TokenRequestEndpoint("http://localhost:8002/oauth/requestToken", "client_id", "client_secret"),
-        TokenEndpoint("http://localhost:8002/oauth/token", "access_code")
-      ),
-      ApplicationGrant(TokenEndpoint("http://localhost:8002/oauth/token", "access_code"))
-    )
-  ))
+        TokenEndpoint("http://localhost:8002/oauth/token", "access_code")),
+      ApplicationGrant(TokenEndpoint("http://localhost:8002/oauth/token", "access_code")))))
   swagger.addAuthorization(OAuth(
     List("PUBLIC"),
     List(
       ImplicitGrant(LoginEndpoint("http://localhost:8002/oauth/dialog"), "access_code"),
       AuthorizationCodeGrant(
         TokenRequestEndpoint("http://localhost:8002/oauth/requestToken", "client_id", "client_secret"),
-        TokenEndpoint("http://localhost:8002/oauth/token", "access_code")
-      )
-    ),
+        TokenEndpoint("http://localhost:8002/oauth/token", "access_code"))),
     "AuthorizationN",
-    "obtain limited access to service"
-  ))
+    "obtain limited access to service"))
   val testServlet = new SwaggerTestServlet(swagger)
 
   addServlet(testServlet, "/pet/*")
@@ -386,8 +370,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
       ("/store/order", "post") -> "placeOrder",
       ("/store/order/{orderId}", "delete") -> "deleteOrder",
       ("/store/order/{orderId}", "get") -> "getOrderById",
-      ("/user/", "post") -> "createUser"
-    )
+      ("/user/", "post") -> "createUser")
     paths flatMap {
       case (path, JObject(x)) =>
         x map {
@@ -432,7 +415,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
   }
 
   def verifyProperty(actual: JValue, expected: JValue, propertyName: String) = {
-    val m = verifyFields(actual, expected, "type", "format", "$ref", "items")
+    val m = verifyFields(actual, expected, "type", "format", "$ref", "items", "description")
     m setMessage (m.message + " of the property " + propertyName)
   }
 
@@ -461,8 +444,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
               val mm = verifyFields(
                 af_value,
                 ef collectFirst { case (ef_code, ef_value) if ef_code == af_code => ef_value } getOrElse JNothing,
-                "schema", "description"
-              )
+                "schema", "description")
               mm setMessage (mm.message + " in response messages collection")
           }
           def countsmatch = (af.size must_== ef.size).setMessage("The count for the responseMessages is different")
@@ -474,8 +456,7 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
             val mm = verifyFields(
               v,
               ef find (_ \ "name" == v \ "name") get,
-              "allowableValues", "type", "$ref", "items", "paramType", "defaultValue", "description", "name", "required", "paramAccess"
-            )
+              "allowableValues", "type", "$ref", "items", "paramType", "defaultValue", "description", "name", "required", "paramAccess")
             mm setMessage (mm.message + " in parameter " + (v \ "name").extractOrElse("N/A"))
           }
 
@@ -494,7 +475,6 @@ class SwaggerSpec2 extends ScalatraSpec with JsonMatchers {
 class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
 
   protected val applicationDescription = "Operations about pets"
-  override protected val applicationName = Some("pet")
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
 
@@ -507,15 +487,6 @@ class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet
   get("/undocumented") {
     BadRequest("This should not show up")
   }
-  //
-  //  val rootOperation =
-  //    (apiOperation[List[Pet]]("allPets")
-  //      summary "Show all pets"
-  //      notes "shows all the pets in the data store")
-  //
-  //  get("/", operation(rootOperation)) {
-  //    data.pets
-  //  }
 
   val getPet =
     (apiOperation[Pet]("getPetById")
@@ -595,7 +566,6 @@ class SwaggerTestServlet(protected val swagger: Swagger) extends ScalatraServlet
 
 class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
   protected val applicationDescription = "Operations about store"
-  override protected val applicationName = Some("store")
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
   protected override val swaggerProduces: List[String] = "application/json" :: "application/xml" :: Nil
@@ -611,8 +581,7 @@ class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupp
       parameter pathParam[String]("orderId").description("ID of pet that needs to be fetched").required
       responseMessages (
         ResponseMessage(400, "Invalid ID supplied"),
-        ResponseMessage(404, "Order not found")
-      ))
+        ResponseMessage(404, "Order not found")))
 
   get("/order/:orderId", operation(getOrderOperation)) {
     ""
@@ -625,8 +594,7 @@ class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupp
       tags ("store")
       responseMessages (
         ResponseMessage(400, "Invalid ID supplied"),
-        ResponseMessage(404, "Order not found")
-      ))
+        ResponseMessage(404, "Order not found")))
 
   delete("/order/:orderId", operation(deleteOrderOperation)) {
     NoContent()
@@ -645,7 +613,6 @@ class StoreApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupp
 
 class UserApi(val swagger: Swagger) extends ScalatraServlet with NativeJsonSupport with SwaggerSupport {
   protected val applicationDescription = "Operations about user"
-  override protected val applicationName = Some("user")
   protected implicit val jsonFormats: Formats = DefaultFormats
   implicit val StringFormat = DefaultJsonFormats.GenericFormat(DefaultReaders.StringReader, DefaultWriters.StringWriter)
 
@@ -662,8 +629,7 @@ case class Order(
   @ApiModelProperty(position = 2, description = "Order Status", allowableValues = "placed,approved,delivered") status: String,
   @ApiModelProperty(position = 3) petId: Long,
   @ApiModelProperty(position = 4) quantity: Int,
-  @ApiModelProperty(position = 5) shipDate: DateTime
-)
+  @ApiModelProperty(position = 5) shipDate: DateTime)
 case class User(id: Long, username: String, password: String, email: String, firstName: String, lastName: String, phone: String, userStatus: Int)
 case class Pet(
   @ApiModelProperty(position = 3) id: Long,
@@ -671,8 +637,7 @@ case class Pet(
   @ApiModelProperty(position = 2) name: String,
   @ApiModelProperty(position = 6) photoUrls: List[String],
   @ApiModelProperty(position = 4) tags: List[Tag],
-  @ApiModelProperty(position = 5, description = "pet status in the store", allowableValues = "available,pending,sold") status: String
-)
+  @ApiModelProperty(position = 5, description = "pet status in the store", allowableValues = "available,pending,sold") status: String)
 
 case class Tag(id: Long, name: String)
 case class Category(id: Long, name: String)
@@ -693,8 +658,7 @@ class PetData {
     Category(1, "Dogs"),
     Category(2, "Cats"),
     Category(3, "Rabbits"),
-    Category(4, "Lions")
-  )
+    Category(4, "Lions"))
 
   var pets = List(
     Pet(1, categories(1), "Cat 1", List("url1", "url2"), List(Tag(1, "tag1"), Tag(2, "tag2")), "available"),
@@ -709,8 +673,7 @@ class PetData {
     Pet(8, categories(3), "Lion 1", List("url1", "url2"), List(Tag(1, "tag1"), Tag(2, "tag2")), "available"),
     Pet(9, categories(3), "Lion 1", List("url1", "url2"), List(Tag(1, "tag1"), Tag(2, "tag2")), "available"),
 
-    Pet(10, categories(2), "Rabbit 1", List("url1", "url2"), List(Tag(1, "tag1"), Tag(2, "tag2")), "available")
-  )
+    Pet(10, categories(2), "Rabbit 1", List("url1", "url2"), List(Tag(1, "tag1"), Tag(2, "tag2")), "available"))
 
   def getPetbyId(id: Long): Option[Pet] = pets.find(_.id == id)
 

@@ -18,8 +18,7 @@ object ScalateSupport {
   val DefaultLayouts = Seq(
     "/WEB-INF/templates/layouts/default",
     "/WEB-INF/layouts/default",
-    "/WEB-INF/scalate/layouts/default"
-  )
+    "/WEB-INF/scalate/layouts/default")
   private def setLayoutStrategy(engine: TemplateEngine) = {
     val layouts = for {
       base <- ScalateSupport.DefaultLayouts
@@ -131,15 +130,6 @@ trait ScalateSupport extends org.scalatra.servlet.ServletBase {
   }
 
   /**
-   * Creates a render context and renders directly to that.  No template
-   * search is performed, and the layout strategy is circumvented.  Clients
-   * are urged to consider layoutTemplate instead.
-   */
-  @deprecated("not idiomatic Scalate; consider layoutTemplate instead", "2.0.0")
-  def renderTemplate(path: String, attributes: (String, Any)*)(implicit request: HttpServletRequest, response: HttpServletResponse) =
-    createRenderContext(response.writer).render(path, Map(attributes: _*))
-
-  /**
    * Flag whether the Scalate error page is enabled.  If true, uncaught
    * exceptions will be caught and rendered by the Scalate error page.
    *
@@ -196,8 +186,7 @@ trait ScalateSupport extends org.scalatra.servlet.ServletBase {
     List(
       "/WEB-INF/templates/views",
       "/WEB-INF/views",
-      "/WEB-INF/scalate/templates"
-    )
+      "/WEB-INF/scalate/templates")
 
   /**
    * The default path to search for templates.  Left as a def so it can be

@@ -199,8 +199,6 @@ object SwaggerSupportSyntax {
       }
     }
 
-    //    def allowsMultiple: Boolean = !SwaggerSupportSyntax.SingleValued.contains(paramType) && _allowMultiple
-
     def result =
       Parameter(name, dataType, description, notes, paramType, defaultValue, allowableValues, isRequired, None, _position)
   }
@@ -223,14 +221,14 @@ object SwaggerSupportSyntax {
   abstract class SwaggerOperationBuilder[T <: SwaggerOperation] {
 
     private[this] var _summary: String = ""
-    private[this] var _notes: String = ""
+    private[this] var _description: String = ""
     private[this] var _deprecated: Boolean = false
     private[this] var _nickname: String = _
     private[this] var _parameters: List[Parameter] = Nil
     private[this] var _responseMessages: List[ResponseMessage] = Nil
     private[this] var _produces: List[String] = Nil
     private[this] var _consumes: List[String] = Nil
-    private[this] var _protocols: List[String] = Nil
+    private[this] var _schemes: List[String] = Nil
     private[this] var _authorizations: List[String] = Nil
     private[this] var _tags: List[String] = Nil
     private[this] var _position: Int = 0
@@ -242,19 +240,29 @@ object SwaggerSupportSyntax {
       this
     }
     def summary: String = _summary
+    @deprecated("This property will be dropped in Scalatra 2.7.0. Use description instead.", "2.6.0")
     def notes(content: String): this.type = {
-      _notes = content
+      _description = content
       this
     }
-    def notes: Option[String] = _notes.blankOption
+    @deprecated("This property will be dropped in Scalatra 2.7.0. Use description instead.", "2.6.0")
+    def notes: Option[String] = _description.blankOption
+    def description(content: String): this.type = {
+      _description = content
+      this
+    }
+    def description: Option[String] = _description.blankOption
     def deprecated(value: Boolean): this.type = {
       _deprecated = value
       this
     }
     def deprecated: Boolean = _deprecated
     def deprecate: this.type = { _deprecated = true; this }
+    @deprecated("This property will be dropped in Scalatra 2.7.0. Use operationId instead.", "2.6.0")
     def nickname(value: String): this.type = { _nickname = value; this }
+    @deprecated("This property will be dropped in Scalatra 2.7.0. Use operationId instead.", "2.6.0")
     def nickName(value: String): this.type = nickname(value)
+    @deprecated("This property will be dropped in Scalatra 2.7.0. Use operationId instead.", "2.6.0")
     def nickname: Option[String] = _nickname.blankOption
     def parameters(params: Parameter*): this.type = { _parameters :::= params.toList; this }
     def parameter(param: Parameter): this.type = parameters(param)
@@ -266,21 +274,18 @@ object SwaggerSupportSyntax {
     def produces: List[String] = _produces
     def consumes: List[String] = _consumes
     def consumes(values: String*): this.type = { _consumes :::= values.toList; this }
-    def protocols: List[String] = _protocols
-    def protocols(values: String*): this.type = { _protocols :::= values.toList; this }
+    @deprecated("This property will be dropped in Scalatra 2.7.0. Use schemes instead.", "2.6.0")
+    def protocols: List[String] = _schemes
+    @deprecated("This property will be dropped in Scalatra 2.7.0. Use schemes instead.", "2.6.0")
+    def protocols(values: String*): this.type = { _schemes :::= values.toList; this }
+    def schemes: List[String] = _schemes
+    def schemes(values: String*): this.type = { _schemes :::= values.toList; this }
     def authorizations: List[String] = _authorizations
     def authorizations(values: String*): this.type = { _authorizations :::= values.toList; this }
     def tags: List[String] = _tags
     def tags(values: String*): this.type = { _tags :::= values.toList; this }
     def position(value: Int): this.type = { _position = value; this }
     def position: Int = _position
-
-    @deprecated("Swagger spec 1.2 defines errors as responseMessages", "2.2.2")
-    def errors(errs: ResponseMessage*): this.type = responseMessages(errs: _*)
-    @deprecated("Swagger spec 1.2 defines error as responseMessage", "2.2.2")
-    def error(err: ResponseMessage): this.type = responseMessages(err)
-    @deprecated("Swagger spec 1.2 defines errors as responseMessages", "2.2.2")
-    def errorResponses: List[ResponseMessage] = responseMessages
 
     def result: T
   }
@@ -298,23 +303,16 @@ object SwaggerSupportSyntax {
       responseMessages,
       consumes,
       produces,
-      protocols,
+      schemes,
       authorizations,
-      tags
-    )
+      tags)
   }
 }
 trait SwaggerSupportSyntax extends Initializable with CorsSupport {
   this: ScalatraBase with SwaggerSupportBase =>
   protected implicit def swagger: SwaggerEngine[_]
 
-  @deprecated("This field is no longer used, due to changes in Swagger spec 1.2", "2.3.1")
-  protected def applicationName: Option[String] = None
-
   protected def applicationDescription: String
-
-  @deprecated("Swagger spec 1.2 renamed this to swaggerDefaultMessages, please use that one", "2.2.2")
-  protected def swaggerDefaultErrors: List[ResponseMessage] = swaggerDefaultMessages
 
   protected def swaggerDefaultMessages: List[ResponseMessage] = Nil
 
@@ -372,12 +370,6 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
 
   }
 
-  @deprecated("This implicit conversion will be removed in the future", "2.2")
-  implicit protected def modelToSwagger(cls: Class[_]): (String, Model) = {
-    val mod = Swagger.modelToSwagger(Reflector.scalaTypeOf(cls)).get // TODO: the use of .get is pretty dangerous, but it's deprecated
-    mod.id -> mod
-  }
-
   private[swagger] val _models: mutable.Map[String, Model] = mutable.Map.empty
 
   /**
@@ -399,9 +391,6 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
     Swagger.collectModels[T](_models.values.toSet) map registerModel
   }
 
-  @deprecated("Use `registerModel[T]` or `registerModel(model)` instead, this method will be removed in the future", "2.2")
-  protected def models_=(m: Map[String, Model]) = _models ++= m
-
   /**
    * The currently registered model descriptions for swagger
    *
@@ -413,31 +402,7 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
 
   protected def description(f: PartialFunction[String, String]) = _description = f orElse _description
 
-  @deprecated("Use the `apiOperation.summary` and `operation` methods to build swagger descriptions of endpoints", "2.2")
-  protected def summary(value: String) = swaggerMeta(Symbols.Summary, value)
-
-  @deprecated("Use the `apiOperation.notes` and `operation` methods to build swagger descriptions of endpoints", "2.2")
-  protected def notes(value: String) = swaggerMeta(Symbols.Notes, value)
-
-  @deprecated("Use the variant where you use a type parameter, this method doesn't allow for reflection and requires you to manually ad the model", "2.2")
-  protected def responseClass(value: String) = swaggerMeta(Symbols.ResponseClass, value)
-
-  @deprecated("Use the `apiOperation.responseClass` and `operation` methods to build swagger descriptions of endpoints", "2.2")
-  protected def responseClass[T](implicit mf: Manifest[T]) = {
-    registerModel[T]()
-    swaggerMeta(Symbols.ResponseClass, DataType[T])
-  }
-
-  @deprecated("Use the `apiOperation.nickname` and `operation` methods to build swagger descriptions of endpoints", "2.2")
-  protected def nickname(value: String) = swaggerMeta(Symbols.Nickname, value)
-
   protected def endpoint(value: String) = swaggerMeta(Symbols.Endpoint, value)
-
-  @deprecated("Use the `apiOperation.parameters` and `operation` methods to build swagger descriptions of endpoints", "2.2")
-  protected def parameters(value: Parameter*) = swaggerMeta(Symbols.Parameters, value.toList)
-
-  @deprecated("Use the `apiOperation.errors` and `operation` methods to build swagger descriptions of endpoints", "2.2")
-  protected def errors(value: Error*) = swaggerMeta(Symbols.Errors, value.toList)
 
   import org.scalatra.swagger.SwaggerSupportSyntax._
 
@@ -446,8 +411,7 @@ trait SwaggerSupportSyntax extends Initializable with CorsSupport {
   implicit def parameterBuilder2parameter(pmb: SwaggerParameterBuilder): Parameter = pmb.result
 
   private[this] def swaggerParam[T: Manifest](
-    name: String, liftCollection: Boolean = false, allowsCollection: Boolean = true, allowsOption: Boolean = true
-  ): ParameterBuilder[T] = {
+    name: String, liftCollection: Boolean = false, allowsCollection: Boolean = true, allowsOption: Boolean = true): ParameterBuilder[T] = {
     val st = Reflector.scalaTypeOf[T]
     if (st.isCollection && !allowsCollection) sys.error("Parameter [" + name + "] does not allow for a collection.")
     if (st.isOption && !allowsOption) sys.error("Parameter [" + name + "] does not allow optional values.")
@@ -591,13 +555,12 @@ trait SwaggerSupport extends ScalatraBase with SwaggerSupportBase with SwaggerSu
         responseClass = responseClass,
         summary = summary,
         position = 0,
-        notes = notes,
-        nickname = nick,
+        description = notes,
+        operationId = nick,
         parameters = theParams,
-        responseMessages = (errors ::: swaggerDefaultMessages ::: swaggerDefaultErrors).distinct,
+        responseMessages = (errors ::: swaggerDefaultMessages).distinct,
         produces = produces,
-        consumes = consumes
-      )
+        consumes = consumes)
     }
   }
 

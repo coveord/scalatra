@@ -14,6 +14,7 @@ import org.json4s.ext.{ EnumNameSerializer, JodaTimeSerializers }
 import org.scalatra.HttpMethod
 import org.scalatra.util.RicherString._
 
+@deprecated("Swagger 1.x support will be dropped in Scalatra 2.7.0", "2.6.0")
 object SwaggerSerializers {
   import org.scalatra.swagger.AllowableValues._
   private val simpleTypes =
@@ -37,8 +38,7 @@ object SwaggerSerializers {
       new ModelSerializer,
       new ResponseMessageSerializer,
       new ParameterSerializer,
-      new GrantTypeSerializer
-    )
+      new GrantTypeSerializer)
   }
   trait SwaggerFormats extends DefaultFormats {
 
@@ -267,8 +267,7 @@ object SwaggerSerializers {
         default = Option(json \ "default").flatMap {
           case JNothing => None
           case jValue => Some(compact(jValue))
-        }
-      )
+        })
   }, {
     case x: ModelProperty =>
       val json: JValue = ("description" -> x.description) ~ ("position" -> x.position)
@@ -291,8 +290,7 @@ object SwaggerSerializers {
         (json \ "description").getAs[String].flatMap(_.blankOption),
         properties,
         (json \ "extends").getAs[String].flatMap(_.blankOption),
-        (json \ "discriminator").getAs[String].flatMap(_.blankOption)
-      )
+        (json \ "discriminator").getAs[String].flatMap(_.blankOption))
   }, {
     case x: Model =>
       val required = for ((key, value) <- x.properties if value.required) yield key
@@ -337,8 +335,7 @@ object SwaggerSerializers {
           case JBool(value) => value
           case _ => false
         },
-        (json \ "paramAccess").getAs[String].flatMap(_.blankOption)
-      )
+        (json \ "paramAccess").getAs[String].flatMap(_.blankOption))
   }, {
     case x: Parameter =>
       val output =
@@ -367,22 +364,21 @@ object SwaggerSerializers {
         (value \ "consumes").extract[List[String]],
         (value \ "produces").extract[List[String]],
         (value \ "protocols").extract[List[String]],
-        (value \ "authorizations").extract[List[String]]
-      )
+        (value \ "authorizations").extract[List[String]])
   }, {
     case obj: Operation =>
       val json = ("method" -> Extraction.decompose(obj.method)) ~
         ("summary" -> obj.summary) ~
         ("position" -> obj.position) ~
-        ("notes" -> obj.notes.flatMap(_.blankOption).getOrElse("")) ~
+        ("notes" -> obj.description.flatMap(_.blankOption).getOrElse("")) ~
         ("deprecated" -> obj.deprecated) ~
-        ("nickname" -> obj.nickname) ~
+        ("nickname" -> obj.operationId) ~
         ("parameters" -> Extraction.decompose(obj.parameters.sortBy(_.position))) ~
         ("responseMessages" -> (if (obj.responseMessages.nonEmpty) Some(Extraction.decompose(obj.responseMessages)) else None))
 
       val consumes = dontAddOnEmpty("consumes", obj.consumes)_
       val produces = dontAddOnEmpty("produces", obj.produces)_
-      val protocols = dontAddOnEmpty("protocols", obj.protocols)_
+      val protocols = dontAddOnEmpty("protocols", obj.schemes)_
       val authorizations = dontAddOnEmpty("authorizations", obj.authorizations)_
       val r = (consumes andThen produces andThen authorizations andThen protocols)(json)
       r merge writeDataType(obj.responseClass)
@@ -393,8 +389,7 @@ object SwaggerSerializers {
       Endpoint(
         (value \ "path").extract[String],
         (value \ "description").extractOpt[String].flatMap(_.blankOption),
-        (value \ "operations").extract[List[Operation]]
-      )
+        (value \ "operations").extract[List[Operation]])
   }, {
     case obj: Endpoint =>
       ("path" -> obj.path) ~
@@ -415,8 +410,7 @@ object SwaggerSerializers {
         (json \ "apis").extractOrElse(List.empty[Endpoint]),
         (json \ "models").extractOpt[Map[String, Model]].getOrElse(Map.empty),
         (json \ "authorizations").extractOrElse(List.empty[String]),
-        (json \ "position").extractOrElse(0)
-      )
+        (json \ "position").extractOrElse(0))
   }, {
     case x: Api =>
       ("apiVersion" -> x.apiVersion) ~
@@ -452,20 +446,16 @@ object SwaggerSerializers {
     case value if value \ "type" == JString("implicit") =>
       ImplicitGrant(
         LoginEndpoint((value \ "loginEndpoint" \ "url").as[String]),
-        (value \ "tokenName").as[String]
-      )
+        (value \ "tokenName").as[String])
     case value if value \ "type" == JString("authorization_code") =>
       AuthorizationCodeGrant(
         TokenRequestEndpoint(
           (value \ "tokenRequestEndpoint" \ "url").as[String],
           (value \ "tokenRequestEndpoint" \ "clientIdName").as[String],
-          (value \ "tokenRequestEndpoint" \ "clientSecretName").as[String]
-        ),
+          (value \ "tokenRequestEndpoint" \ "clientSecretName").as[String]),
         TokenEndpoint(
           (value \ "tokenEndpoint" \ "url").as[String],
-          (value \ "tokenEndpoint" \ "tokenName").as[String]
-        )
-      )
+          (value \ "tokenEndpoint" \ "tokenName").as[String]))
   }, {
     case ImplicitGrant(login, tokenName) =>
       ("type" -> "implicit") ~
@@ -479,8 +469,7 @@ object SwaggerSerializers {
             ("clientSecretName" -> tokenRequest.clientSecretName))) ~
             ("tokenEndpoint" -> (
               ("url" -> tokenEndpoint.url) ~
-              ("tokenName" -> tokenEndpoint.tokenName)
-            ))
+              ("tokenName" -> tokenEndpoint.tokenName)))
   }))
 
   class AuthorizationTypeSerializer extends CustomSerializer[AuthorizationType](implicit formats => ({

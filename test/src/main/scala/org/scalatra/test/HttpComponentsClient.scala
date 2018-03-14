@@ -7,8 +7,9 @@ import org.apache.http.client.CookieStore
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods._
 import org.apache.http.entity.ByteArrayEntity
+import org.apache.http.entity.ContentType
 import org.apache.http.entity.mime.content.{ ContentBody, StringBody }
-import org.apache.http.entity.mime.{ FormBodyPart, HttpMultipartMode, MultipartEntity }
+import org.apache.http.entity.mime.{ FormBodyPartBuilder, HttpMultipartMode, MultipartEntityBuilder }
 import org.apache.http.impl.client.{ BasicCookieStore, HttpClientBuilder }
 
 import scala.util.DynamicVariable
@@ -57,8 +58,7 @@ trait HttpComponentsClient extends Client {
     path: String,
     queryParams: Iterable[(String, String)] = Map.empty,
     headers: Iterable[(String, String)] = Seq.empty,
-    body: Array[Byte] = null
-  )(f: => A): A =
+    body: Array[Byte] = null)(f: => A): A =
     {
       val client = createClient
       val queryString = toQueryString(queryParams)
@@ -79,8 +79,7 @@ trait HttpComponentsClient extends Client {
     path: String,
     params: Iterable[(String, String)],
     headers: Iterable[(String, String)],
-    files: Iterable[(String, Any)]
-  )(f: => A): A =
+    files: Iterable[(String, Any)])(f: => A): A =
     {
       val client = createClient
       val url = "%s/%s".format(baseUrl, path)
@@ -134,8 +133,7 @@ trait HttpComponentsClient extends Client {
           throw new IllegalArgumentException(
             """|HTTP %s does not support enclosing an entity.
                |Please remove the value from `body` parameter
-               |or use POST/PUT/PATCH instead.""".stripMargin.format(req.getMethod)
-          )
+               |or use POST/PUT/PATCH instead.""".stripMargin.format(req.getMethod))
         }
     }
   }
@@ -143,8 +141,7 @@ trait HttpComponentsClient extends Client {
   private def attachMultipartBody(
     req: HttpRequestBase,
     params: Iterable[(String, String)],
-    files: Iterable[(String, Any)]
-  ): Unit = {
+    files: Iterable[(String, Any)]): Unit = {
 
     if (params.isEmpty && files.isEmpty) {
       return
@@ -152,25 +149,25 @@ trait HttpComponentsClient extends Client {
 
     req match {
       case r: HttpEntityEnclosingRequestBase =>
-        val multipartEntity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE)
+        val builder = MultipartEntityBuilder.create()
+        builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
         params.foreach {
           case (name, value) =>
-            multipartEntity.addPart(new FormBodyPart(name, new StringBody(value)))
+            builder.addPart(FormBodyPartBuilder.create(name, new StringBody(value, ContentType.TEXT_PLAIN)).build())
         }
 
         files.foreach {
           case (name, file) =>
-            multipartEntity.addPart(name, createBody(name, file))
+            builder.addPart(name, createBody(name, file))
         }
 
-        r.setEntity(multipartEntity)
+        r.setEntity(builder.build())
 
       case _ =>
         throw new IllegalArgumentException(
           """|HTTP %s does not support enclosing an entity.
              |Please remove the value from `body` parameter
-             |or use POST/PUT/PATCH instead.""".stripMargin.format(req.getMethod)
-        )
+             |or use POST/PUT/PATCH instead.""".stripMargin.format(req.getMethod))
     }
   }
 
@@ -181,8 +178,7 @@ trait HttpComponentsClient extends Client {
     case s: Any =>
       throw new IllegalArgumentException(
         ("The body type for file parameter '%s' could not be inferred. The " +
-          "supported types are java.util.File and org.scalatra.test.Uploadable").format(name)
-      )
+          "supported types are java.util.File and org.scalatra.test.Uploadable").format(name))
   }
 }
 

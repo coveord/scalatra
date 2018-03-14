@@ -5,11 +5,11 @@ import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{ Date => JDate }
 
-import grizzled.slf4j.Logger
 import org.joda.time._
 import org.json4s._
 import org.scalatra.swagger.reflect._
 import org.scalatra.swagger.runtime.annotations.{ ApiModel, ApiModelProperty }
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
@@ -47,7 +47,7 @@ trait SwaggerEngine[T <: SwaggerApi[_]] {
 object Swagger {
 
   val excludes: Set[java.lang.reflect.Type] = Set(classOf[java.util.TimeZone], classOf[java.util.Date], classOf[DateTime], classOf[LocalDate], classOf[ReadableInstant], classOf[Chronology], classOf[DateTimeZone])
-  val SpecVersion = "1.2"
+  val SpecVersion = "2.0"
 
   def collectModels[T: Manifest](alreadyKnown: Set[Model]): Set[Model] = collectModels(Reflector.scalaTypeOf[T], alreadyKnown)
   private[swagger] def collectModels(tpe: ScalaType, alreadyKnown: Set[Model], known: Set[ScalaType] = Set.empty): Set[Model] = {
@@ -93,8 +93,7 @@ object Swagger {
   def modelToSwagger[T](implicit mf: Manifest[T]): Option[Model] = modelToSwagger(Reflector.scalaTypeOf[T])
 
   private[this] def toModelProperty(descr: ClassDescriptor, position: Option[Int] = None, required: Boolean = true, description: Option[String] = None, allowableValues: String = "", example: Option[String] = None, default: Option[String] = None)(prop: PropertyDescriptor) = {
-    val ctorParam = if (!prop.returnType.isOption) descr.mostComprehensive.find(_.name == prop.name) else None
-    //    if (descr.simpleName == "Pet") println("converting property: " + prop)
+    val ctorParam = descr.mostComprehensive.find(_.name == prop.name)
     val mp = ModelProperty(
       DataType.fromScalaType(if (prop.returnType.isOption) prop.returnType.typeArgs.head else prop.returnType),
       if (position.isDefined && position.forall(_ >= 0)) position.get else ctorParam.map(_.argIndex).getOrElse(position.getOrElse(0)),
@@ -102,9 +101,7 @@ object Swagger {
       description = description.flatMap(_.blankOption),
       allowableValues = convertToAllowableValues(allowableValues),
       example = example.flatMap(_.blankOption),
-      default = default.flatMap(_.blankOption)
-    )
-    //    if (descr.simpleName == "Pet") println("The property is: " + mp)
+      default = default.flatMap(_.blankOption))
     prop.name -> mp
   }
   def modelToSwagger(klass: ScalaType): Option[Model] = {
@@ -129,9 +126,15 @@ object Swagger {
       }
 
       val result = apiModel map { am =>
-        Model(name, name, klass.fullName.blankOption, properties = fields.flatten, baseModel = am.parent.getName.blankOption, discriminator = am.discriminator.blankOption)
+        Model(
+          id = name,
+          name = name,
+          qualifiedName = klass.fullName.blankOption,
+          description = am.description().blankOption,
+          properties = fields.flatten,
+          baseModel = am.parent.getName.blankOption,
+          discriminator = am.discriminator.blankOption)
       } orElse Some(Model(name, name, klass.fullName.blankOption, properties = fields.flatten))
-      //      if (descr.simpleName == "Pet") println("The collected fields:\n" + result)
       result
     }
   }
@@ -188,7 +191,7 @@ object Swagger {
  * An instance of this class is used to hold the API documentation.
  */
 class Swagger(val swaggerVersion: String, val apiVersion: String, val apiInfo: ApiInfo) extends SwaggerEngine[Api] {
-  private[this] val logger = Logger[this.type]
+  private[this] val logger = LoggerFactory.getLogger(getClass)
 
   /**
    * Registers the documentation for an API with the given path.
@@ -203,12 +206,11 @@ class Swagger(val swaggerVersion: String, val apiVersion: String, val apiInfo: A
       description,
       (produces ::: endpoints.flatMap(_.operations.flatMap(_.produces))).distinct,
       (consumes ::: endpoints.flatMap(_.operations.flatMap(_.consumes))).distinct,
-      (protocols ::: endpoints.flatMap(_.operations.flatMap(_.protocols))).distinct,
+      (protocols ::: endpoints.flatMap(_.operations.flatMap(_.schemes))).distinct,
       endpoints,
       s.models.toMap,
       (authorizations ::: endpoints.flatMap(_.operations.flatMap(_.authorizations))).distinct,
-      0
-    )
+      0)
   }
 }
 
@@ -229,29 +231,28 @@ trait SwaggerApi[T <: SwaggerEndpoint[_]] {
   def model(name: String) = models.get(name)
 }
 
-case class ResourceListing(
-  apiVersion: String,
-  swaggerVersion: String = Swagger.SpecVersion,
-  apis: List[ApiListingReference] = Nil,
-  authorizations: List[AuthorizationType] = Nil,
-  info: Option[ApiInfo] = None
-)
+//case class ResourceListing(
+//  apiVersion: String,
+//  swaggerVersion: String = Swagger.SpecVersion,
+//  apis: List[ApiListingReference] = Nil,
+//  authorizations: List[AuthorizationType] = Nil,
+//  info: Option[ApiInfo] = None
+//)
 
-case class ApiListingReference(path: String, description: Option[String] = None, position: Int = 0)
+//case class ApiListingReference(path: String, description: Option[String] = None, position: Int = 0)
 
 case class Api(
-    apiVersion: String,
-    swaggerVersion: String,
-    resourcePath: String,
-    description: Option[String] = None,
-    produces: List[String] = Nil,
-    consumes: List[String] = Nil,
-    protocols: List[String] = Nil,
-    apis: List[Endpoint] = Nil,
-    models: Map[String, Model] = Map.empty,
-    authorizations: List[String] = Nil,
-    position: Int = 0
-) extends SwaggerApi[Endpoint] {
+  apiVersion: String,
+  swaggerVersion: String,
+  resourcePath: String,
+  description: Option[String] = None,
+  produces: List[String] = Nil,
+  consumes: List[String] = Nil,
+  protocols: List[String] = Nil,
+  apis: List[Endpoint] = Nil,
+  models: Map[String, Model] = Map.empty,
+  authorizations: List[String] = Nil,
+  position: Int = 0) extends SwaggerApi[Endpoint] {
 }
 
 object ParamType extends Enumeration {
@@ -347,13 +348,6 @@ object DataType {
     else if (isDate(klass)) this.Date
     else if (isDateTime(klass)) this.DateTime
     else if (isBool(klass)) this.Boolean
-    //    else if (classOf[java.lang.Enum[_]].isAssignableFrom(klass)) this.Enum
-    //    else if (isMap(klass)) {
-    //      if (st.typeArgs.size == 2) {
-    //        val (k :: v :: Nil) = st.typeArgs.toList
-    //        GenMap(fromScalaType(k), fromScalaType(v))
-    //      } else GenMap()
-    //    }
     else if (classOf[scala.collection.Set[_]].isAssignableFrom(klass) || classOf[java.util.Set[_]].isAssignableFrom(klass)) {
       if (st.typeArgs.nonEmpty) GenSet(fromScalaType(st.typeArgs.head))
       else GenSet()
@@ -381,14 +375,11 @@ object DataType {
   private[this] def isDecimal(klass: Class[_]) = DecimalTypes contains klass
 
   private[this] val DateTypes =
-    Set[Class[_]](classOf[LocalDate])
+    Set[Class[_]](classOf[LocalDate], classOf[java.time.LocalDate])
   private[this] def isDate(klass: Class[_]) = DateTypes.exists(_.isAssignableFrom(klass))
   private[this] val DateTimeTypes =
-    Set[Class[_]](classOf[JDate], classOf[DateTime])
+    Set[Class[_]](classOf[JDate], classOf[DateTime], classOf[LocalDateTime], classOf[java.time.LocalDateTime], classOf[java.time.ZonedDateTime], classOf[java.time.OffsetDateTime])
   private[this] def isDateTime(klass: Class[_]) = DateTimeTypes.exists(_.isAssignableFrom(klass))
-  private[this] def isMap(klass: Class[_]) =
-    classOf[collection.Map[_, _]].isAssignableFrom(klass) ||
-      classOf[java.util.Map[_, _]].isAssignableFrom(klass)
 
   private[this] def isCollection(klass: Class[_]) =
     classOf[collection.Traversable[_]].isAssignableFrom(klass) ||
@@ -400,9 +391,9 @@ case class ApiInfo(
   title: String,
   description: String,
   termsOfServiceUrl: String,
-  contact: String,
-  license: String,
-  licenseUrl: String
+  contact: String, // TODO to be nested property for Swagger 2.0
+  license: String, // TODO to be nested property for Swagger 2.0
+  licenseUrl: String // TODO to be nested property for Swagger 2.0
 )
 
 trait AllowableValues
@@ -423,36 +414,34 @@ case class Parameter(
   name: String,
   `type`: DataType,
   description: Option[String] = None,
-  notes: Option[String] = None,
+  @deprecated("This property has been removed in Swagger 2.0, use description instead.", "2.6.0") notes: Option[String] = None,
   paramType: ParamType.ParamType = ParamType.Query,
   defaultValue: Option[String] = None,
-  allowableValues: AllowableValues = AllowableValues.AnyValue,
+  allowableValues: AllowableValues = AllowableValues.AnyValue, // TODO Generate maximum, minimum and so on for Swagger 2.0
   required: Boolean = true,
   //                     allowMultiple: Boolean = false,
+  // TODO Add collectionFormat: Option[String] for Swagger 2.0
   paramAccess: Option[String] = None,
-  position: Int = 0
-)
+  position: Int = 0)
 
 case class ModelProperty(
   `type`: DataType,
   position: Int = 0,
   required: Boolean = false,
   description: Option[String] = None,
-  allowableValues: AllowableValues = AllowableValues.AnyValue,
-  items: Option[ModelRef] = None,
+  allowableValues: AllowableValues = AllowableValues.AnyValue, // TODO Generate maximum, minimum and so on for Swagger 2.0
+  @deprecated("This property has been removed in Swagger 2.0.", "2.6.0") items: Option[ModelRef] = None,
   example: Option[String] = None,
-  default: Option[String] = None
-)
+  default: Option[String] = None)
 
 case class Model(
-    id: String,
-    name: String,
-    qualifiedName: Option[String] = None,
-    description: Option[String] = None,
-    properties: List[(String, ModelProperty)] = Nil,
-    baseModel: Option[String] = None,
-    discriminator: Option[String] = None
-) {
+  id: String,
+  name: String,
+  qualifiedName: Option[String] = None,
+  description: Option[String] = None,
+  properties: List[(String, ModelProperty)] = Nil,
+  baseModel: Option[String] = None,
+  discriminator: Option[String] = None) {
 
   def setRequired(property: String, required: Boolean): Model = {
     val prop = properties.find(_._1 == property).get
@@ -460,11 +449,11 @@ case class Model(
   }
 }
 
+@deprecated("This class has been removed in Swagger 2.0.", "2.6.0")
 case class ModelRef(
   `type`: String,
   ref: Option[String] = None,
-  qualifiedType: Option[String] = None
-)
+  qualifiedType: Option[String] = None)
 
 case class LoginEndpoint(url: String)
 case class TokenRequestEndpoint(url: String, clientIdName: String, clientSecretName: String)
@@ -476,11 +465,10 @@ trait AuthorizationType {
   def description: String
 }
 case class OAuth(
-    scopes: List[String],
-    grantTypes: List[GrantType],
-    keyname: String = "oauth2",
-    description: String = ""
-) extends AuthorizationType {
+  scopes: List[String],
+  grantTypes: List[GrantType],
+  keyname: String = "oauth2",
+  description: String = "") extends AuthorizationType {
   override val `type` = "oauth2"
 }
 case class ApiKey(keyname: String, passAs: String = "header", description: String = "") extends AuthorizationType {
@@ -491,40 +479,32 @@ trait GrantType {
   def `type`: String
 }
 case class ImplicitGrant(
-    loginEndpoint: LoginEndpoint,
-    tokenName: String
-) extends GrantType {
+  loginEndpoint: LoginEndpoint,
+  tokenName: String) extends GrantType {
   def `type` = "implicit"
 }
 case class AuthorizationCodeGrant(
-    tokenRequestEndpoint: TokenRequestEndpoint,
-    tokenEndpoint: TokenEndpoint
-) extends GrantType {
+  tokenRequestEndpoint: TokenRequestEndpoint,
+  tokenEndpoint: TokenEndpoint) extends GrantType {
   def `type` = "authorization_code"
 }
 case class ApplicationGrant(
-    tokenEndpoint: TokenEndpoint
-) extends GrantType {
+  tokenEndpoint: TokenEndpoint) extends GrantType {
   def `type` = "application"
 }
 trait SwaggerOperation {
-  @deprecated("Swagger spec 1.2 renamed `httpMethod` to `method`.", "2.2.2")
-  def httpMethod: HttpMethod = method
   def method: HttpMethod
   def responseClass: DataType
   def summary: String
-  def notes: Option[String]
+  def description: Option[String]
   def deprecated: Boolean
-  def nickname: Option[String]
+  def operationId: Option[String]
   def produces: List[String]
   def consumes: List[String]
-  def protocols: List[String]
+  def schemes: List[String]
   def authorizations: List[String]
   def parameters: List[Parameter]
-  @deprecated("Swagger spec 1.2 renamed `errorResponses` to `responseMessages`.", "2.2.2")
-  def errorResponses: List[ResponseMessage] = responseMessages
   def responseMessages: List[ResponseMessage]
-  //  def supportedContentTypes: List[String]
   def tags: List[String]
   def position: Int
 }
@@ -533,18 +513,16 @@ case class Operation(
   responseClass: DataType,
   summary: String,
   position: Int,
-  notes: Option[String] = None,
+  description: Option[String] = None,
   deprecated: Boolean = false,
-  nickname: Option[String] = None,
+  operationId: Option[String] = None,
   parameters: List[Parameter] = Nil,
   responseMessages: List[ResponseMessage] = Nil,
-  //                     supportedContentTypes: List[String] = Nil,
   consumes: List[String] = Nil,
   produces: List[String] = Nil,
-  protocols: List[String] = Nil,
+  schemes: List[String] = Nil,
   authorizations: List[String] = Nil,
-  tags: List[String] = Nil
-) extends SwaggerOperation
+  tags: List[String] = Nil) extends SwaggerOperation
 
 trait SwaggerEndpoint[T <: SwaggerOperation] {
   def path: String
@@ -555,7 +533,6 @@ trait SwaggerEndpoint[T <: SwaggerOperation] {
 case class Endpoint(
   path: String,
   description: Option[String] = None,
-  operations: List[Operation] = Nil
-) extends SwaggerEndpoint[Operation]
+  operations: List[Operation] = Nil) extends SwaggerEndpoint[Operation]
 
 case class ResponseMessage(code: Int, message: String, responseModel: Option[String] = None)

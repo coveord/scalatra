@@ -4,7 +4,7 @@ package commands
 import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
-import org.scalatra.util.{ MultiMap, ParamsValueReaderProperties }
+import org.scalatra.util.ParamsValueReaderProperties
 
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.{ Map => ConcurrentMap }
@@ -12,6 +12,7 @@ import scala.collection.concurrent.{ Map => ConcurrentMap }
 /**
  * Support for [[org.scalatra.commands.Command]] binding and validation.
  */
+@deprecated("Use scalatra-forms instead.", "2.6.0")
 trait CommandSupport extends ParamsValueReaderProperties with CommandExecutors { this: ScalatraBase =>
 
   type CommandType <: Command
@@ -56,7 +57,7 @@ trait CommandSupport extends ParamsValueReaderProperties with CommandExecutors {
 
   private class CommandRouteMatcher[T <: CommandType](implicit mf: Manifest[T]) extends RouteMatcher {
 
-    override def apply(requestPath: String) = if (command[T].isValid) Some(MultiMap()) else None
+    override def apply(requestPath: String) = if (command[T].isValid) Some(Map.empty) else None
   }
 
   /**
@@ -66,6 +67,7 @@ trait CommandSupport extends ParamsValueReaderProperties with CommandExecutors {
 
 }
 
+@deprecated("Use scalatra-forms instead.", "2.6.0")
 trait ParamsOnlyCommandSupport extends CommandSupport { this: ScalatraBase =>
   type CommandType = ParamsOnlyCommand
 }

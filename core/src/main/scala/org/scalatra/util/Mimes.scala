@@ -5,7 +5,7 @@ import java.net.{ URI, URL }
 
 import eu.medsea.mimeutil.{ MimeType, MimeUtil2 }
 import eu.medsea.util.EncodingGuesser
-import grizzled.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 import scala.util.control.Exception._
@@ -36,7 +36,7 @@ trait Mimes {
 
   import org.scalatra.util.Mimes._
 
-  @transient private[this] val internalLogger = Logger(getClass)
+  @transient private[this] val internalLogger = LoggerFactory.getLogger(getClass)
 
   protected[this] def mimeUtil: MimeUtil2 = new MimeUtil2()
   quiet { mimeUtil.registerMimeDetector("eu.medsea.mimeutil.detector.MagicMimeMimeDetector") }
@@ -79,8 +79,7 @@ trait Mimes {
   def urlMime(url: String, fallback: String = DefaultMime): String = {
     detectMime(fallback) {
       MimeUtil2.getMostSpecificMimeType(
-        mimeUtil.getMimeTypes(new URL(url), new MimeType(fallback))
-      ).toString
+        mimeUtil.getMimeTypes(new URL(url), new MimeType(fallback))).toString
     }
   }
 
@@ -96,8 +95,7 @@ trait Mimes {
 
   private def quiet(fn: => Unit): Unit = {
     allCatch.withApply(
-      internalLogger.warn("An error occurred while registering a mime type detector.", _)
-    )(fn)
+      internalLogger.warn("An error occurred while registering a mime type detector.", _))(fn)
   }
 
   def apply(input: InputStream) = inputStreamMime(input)

@@ -6,7 +6,8 @@ import javax.servlet.http._
 
 import org.scalatra.ScalatraBase
 import org.scalatra.util.RicherString._
-import org.scalatra.util.{ io, _ }
+import org.scalatra.util._
+import org.scalatra.util.io._
 
 import scala.collection.JavaConverters._
 
@@ -114,8 +115,7 @@ trait FileUploadSupport extends ServletBase with HasMultipartConfig {
 
             if (!(item.isFormField)) {
               BodyParams(params.fileParams + ((
-                item.getFieldName, item +: params.fileParams.getOrElse(item.getFieldName, List[FileItem]())
-              )), params.formParams)
+                item.getFieldName, item +: params.fileParams.getOrElse(item.getFieldName, List[FileItem]()))), params.formParams)
             } else {
               BodyParams(params.fileParams, params.formParams)
             }
@@ -201,13 +201,12 @@ object FileUploadSupport {
 
   case class BodyParams(
     fileParams: FileMultiParams,
-    formParams: Map[String, List[String]]
-  )
+    formParams: Map[String, List[String]])
 
 }
 
 class FileMultiParams(wrapped: Map[String, Seq[FileItem]] = Map.empty)
-    extends Map[String, Seq[FileItem]] {
+  extends Map[String, Seq[FileItem]] {
 
   def get(key: String): Option[Seq[FileItem]] = {
     (wrapped.get(key) orElse wrapped.get(key + "[]"))
@@ -239,9 +238,9 @@ case class FileItem(part: Part) {
 
   val size: Long = part.getSize
   val fieldName: String = part.getName
-  val name: String = Util.partAttribute(part, "content-disposition", "filename")
+  val name: String = FileItemUtil.partAttribute(part, "content-disposition", "filename")
   val contentType: Option[String] = part.getContentType.blankOption
-  val charset: Option[String] = Util.partAttribute(part, "content-type", "charset").blankOption
+  val charset: Option[String] = FileItemUtil.partAttribute(part, "content-type", "charset").blankOption
 
   def getName: String = name
 
@@ -270,13 +269,12 @@ case class FileItem(part: Part) {
   def getInputStream: InputStream = part.getInputStream
 }
 
-object Util {
+private object FileItemUtil {
 
   def partAttribute(
     part: Part,
     headerName: String, attributeName: String,
-    defaultValue: String = null
-  ): String = {
+    defaultValue: String = null): String = {
     Option(part.getHeader(headerName)) match {
       case Some(value) => {
         value.split(";").find(_.trim().startsWith(attributeName)) match {

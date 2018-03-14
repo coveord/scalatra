@@ -152,7 +152,7 @@ object Reflector {
                 val theType = ctorParamType(paramName, index, tpe, ctorParameterNames.toList, genParams(index))
                 ConstructorParamDescriptor(decoded, paramName, index, theType, default)
             }
-            ConstructorDescriptor(ctorParams.toSeq, ctor, isPrimary = false)
+            ConstructorDescriptor(ctorParams, ctor, isPrimary = false)
         }
       }
 
@@ -167,7 +167,7 @@ object Reflector {
     }
   }
 
-  def rawClassOf(t: Type): Class[_] = rawClasses(t, _ match {
+  def rawClassOf(t: Type): Class[_] = rawClasses(t, {
     case c: Class[_] => c
     case p: ParameterizedType => rawClassOf(p.getRawType)
     case x => sys.error("Raw type of " + x + " not known")

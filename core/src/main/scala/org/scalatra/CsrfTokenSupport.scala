@@ -8,10 +8,10 @@ object GenerateId {
   def apply(): String = generateCsrfToken()
 
   private[this] def hexEncode(bytes: Array[Byte]): String = {
-    ((new StringBuilder(bytes.length * 2) /: bytes) { (sb, b) =>
+    bytes.foldLeft(new StringBuilder(bytes.length * 2)) { (sb, b) =>
       if ((b.toInt & 0xff) < 0x10) sb.append("0")
       sb.append(Integer.toString(b.toInt & 0xff, 16))
-    }).toString
+    }.toString
   }
 
   protected def generateCsrfToken(): String = {
@@ -19,9 +19,6 @@ object GenerateId {
     (new SecureRandom).nextBytes(tokenVal)
     hexEncode(tokenVal)
   }
-
-  @deprecated("Use generateCsrfToken()", "2.0.0")
-  protected def generateCSRFToken(): String = generateCsrfToken()
 
 }
 
@@ -73,9 +70,6 @@ trait CsrfTokenSupport { this: ScalatraBase =>
   protected def prepareCsrfToken(): String = {
     session.getOrElseUpdate(csrfKey, GenerateId()).toString
   }
-
-  @deprecated("Use prepareCsrfToken()", "2.0.0")
-  protected def prepareCSRFToken(): String = prepareCsrfToken()
 
   /**
    * The key used to store the token on the session, as well as the parameter

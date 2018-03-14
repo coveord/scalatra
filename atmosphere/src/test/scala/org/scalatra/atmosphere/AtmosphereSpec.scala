@@ -12,10 +12,11 @@ import org.json4s.{ DefaultFormats, Formats, _ }
 import org.scalatra.json.JacksonJsonSupport
 import org.scalatra.test.specs2.MutableScalatraSpec
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class AtmosphereSpecServlet(implicit override protected val scalatraActorSystem: ActorSystem)
-    extends ScalatraServlet with JacksonJsonSupport with SessionSupport with AtmosphereSupport {
+  extends ScalatraServlet with JacksonJsonSupport with SessionSupport with AtmosphereSupport {
 
   implicit protected def jsonFormats: Formats = DefaultFormats
   implicit val system = scalatraActorSystem.dispatcher
@@ -154,8 +155,8 @@ class AtmosphereSpec extends MutableScalatraSpec {
   }
 
   private def stopSystem: Unit = {
-    system.shutdown()
-    system.awaitTermination(Duration(1, TimeUnit.MINUTES))
+    val f = system.terminate()
+    Await.result(f, Duration(1, TimeUnit.MINUTES))
   }
 
   override def afterAll = {

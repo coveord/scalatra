@@ -13,12 +13,11 @@ import org.scalatra.servlet.{ FileItem, FileMultiParams, FileUploadSupport, Serv
  * standard bindings to the template.
  */
 class ScalatraRenderContext(
-    protected val kernel: ServletBase,
-    engine: TemplateEngine,
-    out: PrintWriter,
-    req: HttpServletRequest,
-    res: HttpServletResponse
-) extends ServletRenderContext(engine, out, req, res, kernel.servletContext) {
+  protected val kernel: ServletBase,
+  engine: TemplateEngine,
+  out: PrintWriter,
+  req: HttpServletRequest,
+  res: HttpServletResponse) extends ServletRenderContext(engine, out, req, res, kernel.servletContext) {
 
   def flash: scala.collection.Map[String, Any] = kernel match {
     case flashMapSupport: FlashMapSupport => flashMapSupport.flash(request)
@@ -37,9 +36,6 @@ class ScalatraRenderContext(
     case af: ApiFormats => af.format(request, response)
     case _ => ""
   }
-
-  @deprecated("`format` now means the same as `responseFormat`, `responseFormat` will be removed eventually", "2.3")
-  def responseFormat: String = format
 
   def fileMultiParams: FileMultiParams = kernel match {
     case fu: FileUploadSupport => fu.fileMultiParams(request)
@@ -109,6 +105,5 @@ class ScalatraRenderContext(
   def url(
     route: Route,
     params: Map[String, String],
-    splats: Iterable[String]
-  ): String = UrlGenerator.url(route, params, splats)(request)
+    splats: Iterable[String]): String = UrlGenerator.url(route, params, splats)(request)
 }

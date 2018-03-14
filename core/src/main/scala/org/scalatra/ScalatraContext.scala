@@ -11,14 +11,13 @@ object ScalatraContext {
     implicit
     val request: HttpServletRequest,
     val response: HttpServletResponse,
-    val servletContext: ServletContext
-  ) extends ScalatraContext
+    val servletContext: ServletContext) extends ScalatraContext
 }
 
 trait ScalatraContext
-    extends ServletApiImplicits
-    with SessionSupport
-    with CookieContext {
+  extends ServletApiImplicits
+  with SessionSupport
+  with CookieContext {
 
   import org.scalatra.ScalatraContext.StableValuesContext
 
@@ -36,7 +35,7 @@ trait ScalatraContext
   /**
    * Gets the status code of the current response.
    */
-  def status: Int = response.status.code
+  def status: Int = response.status
 
   /**
    * Sets the content type of the current response.
@@ -45,13 +44,10 @@ trait ScalatraContext
     response.contentType = Option(contentType)
   }
 
-  @deprecated("Use status_=(Int) instead", "2.1.0")
-  def status(code: Int): Unit = { status_=(code) }
-
   /**
    * Sets the status code of the current response.
    */
-  def status_=(code: Int): Unit = { response.status = ResponseStatus(code) }
+  def status_=(code: Int): Unit = { response.status = code }
 
   /**
    * Explicitly sets the request-scoped format.  This takes precedence over

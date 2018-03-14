@@ -39,7 +39,7 @@ import org.scalatra.util.conversion._
  * @version 0.1
  *
  */
-
+@deprecated("Use scalatra-forms instead.", "2.6.0")
 trait Command extends BindingSyntax with ParamsValueReaderProperties {
 
   type CommandTypeConverterFactory[T] <: TypeConverterFactory[T]
@@ -115,9 +115,8 @@ trait Command extends BindingSyntax with ParamsValueReaderProperties {
 
   def bindTo[S, I](
     data: S,
-    params: MultiParams = MultiMap.empty,
-    headers: Map[String, String] = Map.empty
-  )(implicit r: S => ValueReader[S, I], mi: Manifest[I], multiParams: MultiParams => ValueReader[MultiParams, Seq[String]]): this.type = {
+    params: MultiParams = Map.empty,
+    headers: Map[String, String] = Map.empty)(implicit r: S => ValueReader[S, I], mi: Manifest[I], multiParams: MultiParams => ValueReader[MultiParams, Seq[String]]): this.type = {
     doBeforeBindingActions()
 
     bindings = bindings map {
@@ -160,6 +159,7 @@ trait Command extends BindingSyntax with ParamsValueReaderProperties {
   def >>[S](handler: this.type => S)(implicit executor: ExecutorView[S]): S = apply(handler)
 }
 
+@deprecated("Use scalatra-forms instead.", "2.6.0")
 trait ParamsOnlyCommand extends TypeConverterFactories with Command {
   type CommandTypeConverterFactory[T] = TypeConverterFactory[T]
 }

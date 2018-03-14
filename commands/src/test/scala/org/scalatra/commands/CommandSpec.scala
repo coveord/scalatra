@@ -3,7 +3,6 @@ package commands
 
 import javax.servlet.http.HttpServletRequest
 
-import org.scalatra.util.MultiMap
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 
@@ -42,8 +41,7 @@ class MixAndMatchCommand extends ParamsOnlyCommand {
     sourcedFrom Header
     description "The API token for this request"
     notes "Invalid data kills kittens"
-    allowableValues "123"
-  )
+    allowableValues "123")
   val skip: Field[Int] = asInt("skip").sourcedFrom(Query).description("The offset for this collection index")
   val limit: Field[Int] = asType[Int]("limit").sourcedFrom(Query).withDefaultValue(20).description("the max number of items to return")
 }
@@ -90,7 +88,7 @@ class CommandSpec extends Specification {
     "bindTo with values from all kinds of different sources and bind matching values to specific keys" in {
       val form = new MixAndMatchCommand
       val params = Map("name" -> "John", "age" -> "45", "limit" -> "30", "skip" -> "20")
-      val multi = MultiMap(params map { case (k, v) => k -> Seq(v) })
+      val multi = params map { case (k, v) => k -> Seq(v) }
       val hdrs = Map("API-TOKEN" -> "123")
       form.bindTo(params, multi, hdrs)
       form.name.value must beSome("John")
@@ -122,7 +120,7 @@ class CommandSpec extends Specification {
 
       trait PreBindAction extends WithBinding {
 
-        var timestamp: Long = _
+        var timestamp: Long = 0L
 
         beforeBinding {
           a.original must beNone
@@ -147,7 +145,7 @@ class CommandSpec extends Specification {
 
       trait AfterBindAction extends WithBinding {
 
-        private var _fullname: String = _
+        private var _fullname: String = null
 
         def fullName: Option[String] = Option {
           _fullname
@@ -209,7 +207,7 @@ class CommandSupportSpec extends Specification with Mockito {
 
       implicit val req = mock[HttpServletRequest].smart
       val page = new ScalatraPage {
-        override def multiParams(implicit request: HttpServletRequest): MultiParams = MultiMap()
+        override def multiParams(implicit request: HttpServletRequest): MultiParams = Map.empty
         override implicit def request = req
       }
       val key = page.commandRequestKey[CommandSample]

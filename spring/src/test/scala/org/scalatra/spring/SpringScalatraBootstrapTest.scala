@@ -4,8 +4,8 @@ import java.util
 import javax.servlet.http.HttpServlet
 import javax.servlet.{ ServletContext, ServletRegistration }
 
-import org.mockito.{ Matchers, Mockito }
-import org.scalatest.mock.MockitoSugar
+import org.mockito.{ ArgumentMatchers, Mockito }
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{ FunSuite, OneInstancePerTest }
 import org.scalatra.ScalatraServlet
 import org.springframework.context.ApplicationContext
@@ -20,7 +20,7 @@ class SpringScalatraBootstrapTest extends FunSuite with OneInstancePerTest with 
   bootstrapper.setApplicationContext(applicationContext)
 
   val reg = mock[ServletRegistration.Dynamic]
-  Mockito.when(servletContext.addServlet(Matchers.anyString, Matchers.any[HttpServlet])).thenReturn(reg)
+  Mockito.when(servletContext.addServlet(ArgumentMatchers.anyString, ArgumentMatchers.any[HttpServlet])).thenReturn(reg)
 
   val resource = new CustomerResource
 

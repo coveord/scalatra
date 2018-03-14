@@ -3,10 +3,10 @@ package auth
 
 import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
 
-import grizzled.slf4j.Logger
 import org.scalatra.auth.ScentryAuthStore.ScentryAuthStore
 import org.scalatra.servlet.ServletApiImplicits._
 import org.scalatra.util.RicherString._
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
@@ -15,11 +15,6 @@ object Scentry {
   type StrategyFactory[UserType <: AnyRef] = ScalatraBase ⇒ ScentryStrategy[UserType]
 
   private val _globalStrategies = new mutable.HashMap[String, StrategyFactory[_ <: AnyRef]]()
-
-  @deprecated("Use method `register` with strings instead.", "2.0")
-  def registerStrategy[UserType <: AnyRef](name: Symbol, strategyFactory: StrategyFactory[UserType]): Unit = {
-    _globalStrategies += (name.name -> strategyFactory)
-  }
 
   def register[UserType <: AnyRef](name: String, strategyFactory: StrategyFactory[UserType]): Unit = {
     _globalStrategies += (name -> strategyFactory)
@@ -33,13 +28,12 @@ object Scentry {
 }
 
 class Scentry[UserType <: AnyRef](
-    app: ScalatraBase,
-    serialize: PartialFunction[UserType, String],
-    deserialize: PartialFunction[String, UserType],
-    private[this] var _store: ScentryAuthStore
-) {
+  app: ScalatraBase,
+  serialize: PartialFunction[UserType, String],
+  deserialize: PartialFunction[String, UserType],
+  private[this] var _store: ScentryAuthStore) {
 
-  private[this] lazy val logger = Logger(getClass)
+  private[this] lazy val logger = LoggerFactory.getLogger(getClass)
   type StrategyType = ScentryStrategy[UserType]
   type StrategyFactory = ScalatraBase ⇒ StrategyType
 
@@ -114,10 +108,6 @@ class Scentry[UserType <: AnyRef](
   private def missingDeserializer: PartialFunction[String, UserType] = {
     case _ ⇒ throw new RuntimeException("You need to provide a session deserializer for Scentry")
   }
-
-  @deprecated("Use the version that uses string keys instead", "2.2")
-  def authenticate(name: Symbol, names: Symbol*)(implicit request: HttpServletRequest, response: HttpServletResponse): Option[UserType] =
-    authenticate((Seq(name) ++ names.toSeq).map(_.name): _*)
 
   def authenticate(names: String*)(implicit request: HttpServletRequest, response: HttpServletResponse): Option[UserType] = {
     val r = runAuthentication(names: _*) map {

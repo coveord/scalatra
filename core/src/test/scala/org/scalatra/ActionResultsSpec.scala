@@ -48,12 +48,7 @@ trait ActionResultTestBase {
         "Content-Type"
 
     Ok("Hello, world!", headers = Map(
-      headerName -> "application/vnd.ms-excel"
-    ))
-  }
-
-  get("/custom-reason") {
-    BadRequest(body = "abc", reason = "Bad Bad Bad")
+      headerName -> "application/vnd.ms-excel"))
   }
 
   get("/input-stream") {
@@ -103,13 +98,13 @@ abstract class ActionResultsSpec extends MutableScalatraSpec {
 
     "infer contentType for String" in {
       get("/ok") {
-        response.getContentType mustEqual "text/plain; charset=UTF-8"
+        response.getContentType mustEqual "text/plain;charset=utf-8"
       }
     }
 
     "infer contentType for Array[Byte]" in {
       get("/bytes") {
-        response.getContentType mustEqual "text/plain; charset=" + java.nio.charset.Charset.defaultCharset.displayName
+        response.getContentType mustEqual "text/plain;charset=" + java.nio.charset.Charset.defaultCharset.displayName.toLowerCase
       }
     }
 
@@ -137,13 +132,13 @@ abstract class ActionResultsSpec extends MutableScalatraSpec {
 
     "set the Content-Type header if it exists in the headers map" in {
       get("/contentType") {
-        header("Content-Type") mustEqual "application/vnd.ms-excel; charset=UTF-8"
+        header("Content-Type") mustEqual "application/vnd.ms-excel;charset=utf-8"
       }
     }
 
     "set the Content-Type header if it's in lowercase in the headers map" in {
       get("/contentType?lcase=true") {
-        header("Content-Type") mustEqual "application/vnd.ms-excel; charset=UTF-8"
+        header("Content-Type") mustEqual "application/vnd.ms-excel;charset=utf-8"
       }
     }
   }
@@ -194,14 +189,6 @@ abstract class ActionResultsSpec extends MutableScalatraSpec {
     "keep body empty" in {
       get("/ok-no-body") {
         body mustEqual ""
-      }
-    }
-  }
-
-  "returning ActionResult with custom reason" should {
-    "set a custom reason on status line" in {
-      get("/custom-reason") {
-        response.getReason mustEqual "Bad Bad Bad"
       }
     }
   }

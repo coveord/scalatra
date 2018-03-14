@@ -5,11 +5,14 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatra.json.JsonSupport
 import org.scalatra.swagger.DataType.{ ContainerDataType, ValueDataType }
+import org.slf4j.LoggerFactory
 
 /**
  * Trait that serves the resource and operation listings, as specified by the Swagger specification.
  */
 trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSupport[_] with CorsSupport =>
+
+  private lazy val logger = LoggerFactory.getLogger(getClass)
 
   protected type ApiType <: SwaggerApi[_]
 
@@ -49,6 +52,8 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
         renderSwagger2(swagger.docs.toList.asInstanceOf[List[ApiType]])
       }
     } else {
+      logger.warn("Move to Swagger 2.0 because Swagger 1.x support will be dropped in Scalatra 2.7.0!!")
+
       get("""/([^.]+)*(?:\.(\w+))?""".r) {
         val doc :: fmt :: Nil = multiParams("captures").toList
         if (fmt != null) format = fmt
@@ -71,6 +76,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
    */
   protected implicit def swagger: SwaggerEngine[_ <: SwaggerApi[_]]
 
+  @deprecated("Swagger 1.x support will be dropped in Scalatra 2.7.0", "2.6.0")
   protected def renderDoc(doc: ApiType): JValue = {
     val json = docToJson(doc) merge
       ("basePath" -> fullUrl("/", includeContextPath = swagger.baseUrlIncludeContextPath, includeServletPath = swagger.baseUrlIncludeServletPath)) ~
@@ -90,11 +96,12 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
     json merge v
   }
 
+  @deprecated("Swagger 1.x support will be dropped in Scalatra 2.7.0", "2.6.0")
   protected def renderIndex(docs: List[ApiType]): JValue = {
     ("apiVersion" -> swagger.apiVersion) ~
       ("swaggerVersion" -> swagger.swaggerVersion) ~
       ("apis" ->
-        (docs.filter(_.apis.nonEmpty).toList map {
+        (docs.filter(_.apis.nonEmpty) map {
           doc =>
             ("path" -> (url(doc.resourcePath, includeServletPath = false, includeContextPath = false) + (if (includeFormatParameter) ".{format}" else ""))) ~
               ("description" -> doc.description)
@@ -125,20 +132,24 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
     }
   }
 
+  protected def bathPath: Option[String] = {
+    val path = url("/", includeContextPath = swagger.baseUrlIncludeContextPath, includeServletPath = swagger.baseUrlIncludeServletPath)
+    if (path.isEmpty) None else Some(path)
+  }
+
   protected def renderSwagger2(docs: List[ApiType]): JValue = {
     ("swagger" -> "2.0") ~
+      ("basePath" -> bathPath) ~
       ("info" ->
         ("title" -> swagger.apiInfo.title) ~
         ("version" -> swagger.apiVersion) ~
         ("description" -> swagger.apiInfo.description) ~
         ("termsOfService" -> swagger.apiInfo.termsOfServiceUrl) ~
         ("contact" -> (
-          ("name" -> swagger.apiInfo.contact)
-        )) ~
+          ("name" -> swagger.apiInfo.contact))) ~
           ("license" -> (
             ("name" -> swagger.apiInfo.license) ~
-            ("url" -> swagger.apiInfo.licenseUrl)
-          ))) ~
+            ("url" -> swagger.apiInfo.licenseUrl)))) ~
             ("paths" ->
               (docs.filter(_.apis.nonEmpty).flatMap {
                 doc =>
@@ -146,9 +157,10 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                     case api: SwaggerEndpoint[_] =>
                       (api.path -> api.operations.map { operation =>
                         (operation.method.toString.toLowerCase -> (
-                          ("operationId" -> operation.nickname) ~
+                          ("operationId" -> operation.operationId) ~
                           ("summary" -> operation.summary) ~!
-                          ("schemes" -> operation.protocols) ~!
+                          ("description" -> operation.description) ~!
+                          ("schemes" -> operation.schemes) ~!
                           ("consumes" -> operation.consumes) ~!
                           ("produces" -> operation.produces) ~!
                           ("tags" -> operation.tags) ~
@@ -179,69 +191,67 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                                   }.getOrElse(Nil))
                               }.toMap) ~!
                               ("security" -> (operation.authorizations.flatMap { requirement =>
-                                swagger.authorizations.find(_.`keyname` == requirement).map { auth =>
-                                  auth match {
-                                    case a: OAuth => (requirement -> a.scopes)
-                                    case b: ApiKey => (requirement -> List.empty)
-                                    case _ => (requirement -> List.empty)
-                                  }
+                                swagger.authorizations.find(_.`keyname` == requirement).map {
+                                  case a: OAuth => (requirement -> a.scopes)
+                                  case b: ApiKey => (requirement -> List.empty)
+                                  case _ => (requirement -> List.empty)
                                 }
-                              }))
-                        ))
+                              }))))
                       }.toMap)
                   }.toMap
               }.toMap)) ~
               ("definitions" -> docs.flatMap { doc =>
                 doc.models.map {
                   case (name, model) =>
-                    name ->
-                      ("properties" -> model.properties.sortBy(_._2.position).map {
+                    (name ->
+                      ("type" -> "object") ~
+                      ("description" -> model.description) ~
+                      ("discriminator" -> model.discriminator) ~
+                      ("properties" -> model.properties.sortBy(_._2.position)..map {
                         case (name, property) =>
-                          name -> JObject(generateDataType(property.`type`)) ~
+                          (name ->
                             ("default" -> property.default.map(parse(_))) ~
                             ("example" -> property.example.map(parse(_))) ~
                             (Extraction.decompose(property.allowableValues) match {
                               case jObject: JObject => jObject
                               case _ => JObject()
                             }) ~
-                            ("description" -> property.description)
-                      })
+                            ("description" -> property.description) ~~
+                            generateDataType(property.`type`))
+                      }.toMap) ~!
+                      ("required" -> model.properties.collect {
+                        case (name, property) if property.required => name
+                      }))
                 }
               }.toMap) ~
               ("securityDefinitions" -> (swagger.authorizations.flatMap { auth =>
                 (auth match {
-                  case a: OAuth => a.grantTypes.headOption.map { grantType =>
-                    grantType match {
-                      case g: ImplicitGrant => (a.keyname -> JObject(
-                        JField("type", "oauth2"),
-                        JField("description", a.description),
-                        JField("flow", "implicit"),
-                        JField("authorizationUrl", g.loginEndpoint.url),
-                        JField("scopes", a.scopes.map(scope => JField(scope, scope)))
-                      ))
-                      case g: AuthorizationCodeGrant => (a.keyname -> JObject(
-                        JField("type", "oauth2"),
-                        JField("description", a.description),
-                        JField("flow", "implicit"),
-                        JField("authorizationUrl", g.tokenRequestEndpoint.url),
-                        JField("tokenUrl", g.tokenEndpoint.url),
-                        JField("scopes", a.scopes.map(scope => JField(scope, scope)))
-                      ))
-                      case g: ApplicationGrant => ("oauth2" -> JObject(
-                        JField("type", "oauth2"),
-                        JField("description", a.description),
-                        JField("flow", "application"),
-                        JField("tokenUrl", g.tokenEndpoint.url),
-                        JField("scopes", a.scopes.map(scope => JField(scope, scope)))
-                      ))
-                    }
+                  case a: OAuth => a.grantTypes.headOption.map {
+                    case g: ImplicitGrant => (a.keyname -> JObject(
+                      JField("type", "oauth2"),
+                      JField("description", a.description),
+                      JField("flow", "implicit"),
+                      JField("authorizationUrl", g.loginEndpoint.url),
+                      JField("scopes", a.scopes.map(scope => JField(scope, scope)))))
+                    case g: AuthorizationCodeGrant => (a.keyname -> JObject(
+                      JField("type", "oauth2"),
+                      JField("description", a.description),
+                      JField("flow", "accessCode"),
+                      JField("authorizationUrl", g.tokenRequestEndpoint.url),
+                      JField("tokenUrl", g.tokenEndpoint.url),
+                      JField("scopes", a.scopes.map(scope => JField(scope, scope)))))
+                    case g: ApplicationGrant => ("oauth2" -> JObject(
+                      JField("type", "oauth2"),
+                      JField("description", a.description),
+                      JField("flow", "application"),
+                      JField("tokenUrl", g.tokenEndpoint.url),
+                      JField("scopes", a.scopes.map(scope => JField(scope, scope)))))
                   }
                   case a: ApiKey => Some((a.keyname -> JObject(
                     JField("type", "apiKey"),
                     JField("description", a.description),
                     JField("name", a.keyname),
-                    JField("in", a.passAs)
-                  )))
+                    JField("in", a.passAs))))
                 })
               }).toMap)
   }
