@@ -92,14 +92,16 @@ object Swagger {
   import org.scalatra.util.RicherString._
   def modelToSwagger[T](implicit mf: Manifest[T]): Option[Model] = modelToSwagger(Reflector.scalaTypeOf[T])
 
-  private[this] def toModelProperty(descr: ClassDescriptor, position: Option[Int] = None, required: Boolean = true, description: Option[String] = None, allowableValues: String = "")(prop: PropertyDescriptor) = {
+  private[this] def toModelProperty(descr: ClassDescriptor, position: Option[Int] = None, required: Boolean = true, description: Option[String] = None, allowableValues: String = "", example: Option[String] = None, default: Option[String] = None)(prop: PropertyDescriptor) = {
     val ctorParam = descr.mostComprehensive.find(_.name == prop.name)
     val mp = ModelProperty(
       DataType.fromScalaType(if (prop.returnType.isOption) prop.returnType.typeArgs.head else prop.returnType),
       if (position.isDefined && position.forall(_ >= 0)) position.get else ctorParam.map(_.argIndex).getOrElse(position.getOrElse(0)),
       required = required && !prop.returnType.isOption,
       description = description.flatMap(_.blankOption),
-      allowableValues = convertToAllowableValues(allowableValues))
+      allowableValues = convertToAllowableValues(allowableValues),
+      example = example.flatMap(_.blankOption),
+      default = default.flatMap(_.blankOption))
     prop.name -> mp
   }
   def modelToSwagger(klass: ScalaType): Option[Model] = {
@@ -113,7 +115,8 @@ object Swagger {
       val fields = klass.erasure.getDeclaredFields.toList collect {
         case f: Field if f.getAnnotation(classOf[ApiModelProperty]) != null =>
           val annot = f.getAnnotation(classOf[ApiModelProperty])
-          val asModelProperty = toModelProperty(descr, Some(annot.position()), annot.required(), annot.description().blankOption, annot.allowableValues())_
+          val position = if (annot.position() != Integer.MAX_VALUE) Some(annot.position()) else None
+          val asModelProperty = toModelProperty(descr, position, annot.required(), Option(annot.description()), annot.allowableValues(), Option(annot.example()), Option(annot.defaultValue()))_
           descr.properties.find(_.mangledName == f.getName) map asModelProperty
 
         case f: Field =>
@@ -427,7 +430,9 @@ case class ModelProperty(
   required: Boolean = false,
   description: Option[String] = None,
   allowableValues: AllowableValues = AllowableValues.AnyValue, // TODO Generate maximum, minimum and so on for Swagger 2.0
-  @deprecated("This property has been removed in Swagger 2.0.", "2.6.0") items: Option[ModelRef] = None)
+  @deprecated("This property has been removed in Swagger 2.0.", "2.6.0") items: Option[ModelRef] = None,
+  example: Option[String] = None,
+  default: Option[String] = None)
 
 case class Model(
   id: String,

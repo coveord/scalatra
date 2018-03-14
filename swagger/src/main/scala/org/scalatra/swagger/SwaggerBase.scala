@@ -125,6 +125,13 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
     }
   }
 
+  private[this] def isStructuredType(dataType: DataType): Boolean = {
+    dataType match {
+      case t: ValueDataType if t.qualifiedName.isDefined => true
+      case _ => false
+    }
+  }
+
   protected def bathPath: Option[String] = {
     val path = url("/", includeContextPath = swagger.baseUrlIncludeContextPath, includeServletPath = swagger.baseUrlIncludeServletPath)
     if (path.isEmpty) None else Some(path)
@@ -158,12 +165,12 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                           ("produces" -> operation.produces) ~!
                           ("tags" -> operation.tags) ~
                           ("deprecated" -> operation.deprecated) ~
-                          ("parameters" -> operation.parameters.map { parameter =>
+                          ("parameters" -> operation.parameters.sortBy(_.position).map { parameter =>
                             ("name" -> parameter.name) ~
                               ("description" -> parameter.description) ~
                               ("required" -> parameter.required) ~
                               ("in" -> swagger2ParamTypeMapping(parameter.paramType.toString.toLowerCase)) ~~
-                              (if (parameter.paramType.toString.toLowerCase == "body") {
+                              (if (parameter.paramType.toString.toLowerCase == "body" && isStructuredType(parameter.`type`)) {
                                 List(JField("schema", generateDataType(parameter.`type`)))
                               } else {
                                 generateDataType(parameter.`type`)
@@ -200,9 +207,15 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                       ("type" -> "object") ~
                       ("description" -> model.description) ~
                       ("discriminator" -> model.discriminator) ~
-                      ("properties" -> model.properties.map {
+                      ("properties" -> model.properties.sortBy(_._2.position).map {
                         case (name, property) =>
                           (name ->
+                            ("default" -> property.default.map(parse(_))) ~
+                            ("example" -> property.example.map(parse(_))) ~
+                            (Extraction.decompose(property.allowableValues) match {
+                              case jObject: JObject => jObject
+                              case _ => JObject()
+                            }) ~
                             ("description" -> property.description) ~~
                             generateDataType(property.`type`))
                       }.toMap) ~!

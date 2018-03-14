@@ -9,6 +9,7 @@ import org.joda.time.{ DateTime, DateTimeZone }
 import org.json4s.DefaultReaders._
 import org.json4s.JsonDSL._
 import org.json4s._
+import org.json4s.jackson.JsonMethods._
 import org.json4s.ext.{ EnumNameSerializer, JodaTimeSerializers }
 import org.scalatra.HttpMethod
 import org.scalatra.util.RicherString._
@@ -17,7 +18,7 @@ import org.scalatra.util.RicherString._
 object SwaggerSerializers {
   import org.scalatra.swagger.AllowableValues._
   private val simpleTypes =
-    Set("int32", "int64", "float", "double", "string", "byte", "boolean", "date", "date-time", "array")
+    Set("int32", "int64", "float", "double", "string", "byte", "boolean", "date", "date-time", "array", "object")
   private def isSimpleType(name: String) = simpleTypes contains name
 
   private def str(jv: JValue): Option[String] = jv.getAs[String].flatMap(_.blankOption)
@@ -201,6 +202,13 @@ object SwaggerSerializers {
           case _ =>
             items map (DataType.GenList(_)) getOrElse DataType.GenList()
         }
+      } else if (t == "object") {
+        val valueType = value \ "additionalProperties" match {
+          case JNothing => None
+          case jv => Some(readDataType(jv))
+        }
+        // In swagger 2.0, objects are assumed to have string keys
+        valueType map (DataType.GenMap.apply) getOrElse DataType.GenMap()
       } else {
         DataType((value \ "type").as[String], format = str(value \ "format"))
       }
@@ -228,7 +236,15 @@ object SwaggerSerializers {
   }, {
     case AnyValue => JNothing
     case AllowableValuesList(values) => ("enum" -> Extraction.decompose(values)): JValue
-    case AllowableRangeValues(range) => ("minimum" -> range.start) ~ ("maximum" -> range.end)
+    case AllowableRangeValues(range) =>
+      Option(range.start)
+        .filter(_ != Int.MinValue)
+        .map(min => JObject(JField("minimum", min)))
+        .getOrElse(JObject()) ~
+        Option(range.end)
+        .filter(_ != Int.MaxValue)
+        .map(max => JObject(JField("maximum", max)))
+        .getOrElse(JObject())
   }))
 
   class ModelPropertySerializer extends CustomSerializer[ModelProperty](implicit formats => ({
@@ -243,7 +259,15 @@ object SwaggerSerializers {
         },
         description = (json \ "description").getAs[String].flatMap(_.blankOption),
         allowableValues = json.extract[AllowableValues],
-        items = None)
+        items = None,
+        example = Option(json \ "example").flatMap {
+          case JNothing => None
+          case jValue => Some(compact(jValue))
+        },
+        default = Option(json \ "default").flatMap {
+          case JNothing => None
+          case jValue => Some(compact(jValue))
+        })
   }, {
     case x: ModelProperty =>
       val json: JValue = ("description" -> x.description) ~ ("position" -> x.position)
