@@ -125,13 +125,6 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
     }
   }
 
-  private[this] def isStructuredType(dataType: DataType): Boolean = {
-    dataType match {
-      case t: ValueDataType if t.qualifiedName.isDefined => true
-      case _ => false
-    }
-  }
-
   protected def bathPath: Option[String] = {
     val path = url("/", includeContextPath = swagger.baseUrlIncludeContextPath, includeServletPath = swagger.baseUrlIncludeServletPath)
     if (path.isEmpty) None else Some(path)
@@ -170,7 +163,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                               ("description" -> parameter.description) ~
                               ("required" -> parameter.required) ~
                               ("in" -> swagger2ParamTypeMapping(parameter.paramType.toString.toLowerCase)) ~~
-                              (if (parameter.paramType.toString.toLowerCase == "body" && isStructuredType(parameter.`type`)) {
+                              (if (parameter.paramType.toString.toLowerCase == "body") {
                                 List(JField("schema", generateDataType(parameter.`type`)))
                               } else {
                                 generateDataType(parameter.`type`)
@@ -189,7 +182,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                                   response.responseModel.map { model =>
                                     List(JField("schema", JObject(JField("$ref", s"#/definitions/${model}"))))
                                   }.getOrElse(Nil))
-                              }.toMap) ~!
+                              }) ~!
                               ("security" -> (operation.authorizations.flatMap { requirement =>
                                 swagger.authorizations.find(_.`keyname` == requirement).map {
                                   case a: OAuth => (requirement -> a.scopes)
@@ -218,7 +211,7 @@ trait SwaggerBaseBase extends Initializable with ScalatraBase { self: JsonSuppor
                             }) ~
                             ("description" -> property.description) ~~
                             generateDataType(property.`type`))
-                      }.toMap) ~!
+                      }) ~!
                       ("required" -> model.properties.collect {
                         case (name, property) if property.required => name
                       }))

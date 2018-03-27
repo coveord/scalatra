@@ -116,7 +116,7 @@ object Swagger {
         case f: Field if f.getAnnotation(classOf[ApiModelProperty]) != null =>
           val annot = f.getAnnotation(classOf[ApiModelProperty])
           val position = if (annot.position() != Integer.MAX_VALUE) Some(annot.position()) else None
-          val asModelProperty = toModelProperty(descr, position, annot.required(), Option(annot.description()), annot.allowableValues(), Option(annot.example()), Option(annot.defaultValue()))_
+          val asModelProperty = toModelProperty(descr, position, annot.required(), annot.description().blankOption, annot.allowableValues(), annot.example().blankOption, annot.defaultValue().blankOption)_
           descr.properties.find(_.mangledName == f.getName) map asModelProperty
 
         case f: Field =>

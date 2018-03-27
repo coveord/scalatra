@@ -18,7 +18,7 @@ import org.scalatra.util.RicherString._
 object SwaggerSerializers {
   import org.scalatra.swagger.AllowableValues._
   private val simpleTypes =
-    Set("int32", "int64", "float", "double", "string", "byte", "boolean", "date", "date-time", "array", "object")
+    Set("int32", "int64", "float", "double", "string", "byte", "boolean", "date", "date-time", "array")
   private def isSimpleType(name: String) = simpleTypes contains name
 
   private def str(jv: JValue): Option[String] = jv.getAs[String].flatMap(_.blankOption)
@@ -236,15 +236,7 @@ object SwaggerSerializers {
   }, {
     case AnyValue => JNothing
     case AllowableValuesList(values) => ("enum" -> Extraction.decompose(values)): JValue
-    case AllowableRangeValues(range) =>
-      Option(range.start)
-        .filter(_ != Int.MinValue)
-        .map(min => JObject(JField("minimum", min)))
-        .getOrElse(JObject()) ~
-        Option(range.end)
-        .filter(_ != Int.MaxValue)
-        .map(max => JObject(JField("maximum", max)))
-        .getOrElse(JObject())
+    case AllowableRangeValues(range) => ("minimum" -> range.start) ~ ("maximum" -> range.end)
   }))
 
   class ModelPropertySerializer extends CustomSerializer[ModelProperty](implicit formats => ({
