@@ -1,1 +1,1 @@
-version in ThisBuild := "2.6.2.4-coveo-SNAPSHOT"
+version in ThisBuild := "2.6.2.5-coveo"
